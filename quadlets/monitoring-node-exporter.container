@@ -1,0 +1,11 @@
+[Container]
+Image=docker.io/prom/node-exporter:latest
+ContainerName=monitoring-node-exporter
+PodmanArgs=--volume=/proc:/host/proc:ro \
+           --volume=/sys:/host/sys:ro \
+           --volume=/:/rootfs:ro \
+           --restart=unless-stopped
+Network=shared-network
+
+[Install]
+WantedBy=default.target

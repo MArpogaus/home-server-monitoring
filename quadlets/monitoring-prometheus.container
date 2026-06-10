@@ -1,0 +1,10 @@
+[Container]
+Image=docker.io/prom/prometheus:latest
+ContainerName=monitoring-prometheus
+PodmanArgs=--volume=./configs/prometheus.yaml:/etc/prometheus/prometheus.yaml:Z \
+           --restart=unless-stopped
+Volume=prometheus-data:/prometheus:Z
+Network=shared-network
+
+[Install]
+WantedBy=default.target

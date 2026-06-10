@@ -1,0 +1,10 @@
+[Container]
+Image=docker.io/grafana/loki:3
+ContainerName=monitoring-loki
+PodmanArgs=--volume=./configs/loki.yaml:/etc/loki/local-config.yaml:Z \
+           --restart=unless-stopped
+Volume=loki-data:/loki:Z
+Network=shared-network
+
+[Install]
+WantedBy=default.target
