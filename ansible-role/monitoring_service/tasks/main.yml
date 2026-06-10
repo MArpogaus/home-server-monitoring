@@ -8,7 +8,7 @@
 
 - name: Deploy Monitoring Quadlet files (container, volume, network)
   ansible.builtin.copy:
-    src: "{{ monitoring_role_dir }}/../../quadlets/"
+    src: "{{ monitoring_service_role_dir }}/../../quadlets/"
     dest: "{{ monitoring_service_home }}/.config/containers/systemd/"
     owner: "{{ monitoring_service_user }}"
     mode: "0644"
