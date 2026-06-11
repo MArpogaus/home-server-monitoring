@@ -21,10 +21,9 @@
   become: yes
   become_user: "{{ monitoring_service_user }}"
 
-- name: Enable and start Monitoring Quadlet services
+- name: Start Monitoring Quadlet services (enable handled by Quadlet generator)
   ansible.builtin.systemd:
     name: "{{ item }}"
-    enabled: true
     state: started
     scope: user
   become: yes
