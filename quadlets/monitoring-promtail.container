@@ -8,8 +8,6 @@ PodmanArgs=--volume=/var/log/journal/:/var/log/journal/:ro \
            --volume=nc-app-logs:/var/log/nextcloud:ro
 AutoUpdate=registry
 Pod=monitoring.pod
-Entrypoint=
-Command=-config.expand-env=true -config.file=/etc/promtail/promtail.yaml
 
 [Install]
 WantedBy=default.target
