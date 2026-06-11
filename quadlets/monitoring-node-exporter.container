@@ -6,7 +6,10 @@ PodmanArgs=--volume=/proc:/host/proc:ro \
            --volume=/:/rootfs:ro
 AutoUpdate=registry
 Pod=monitoring.pod
-RestartPolicy=on-failure
 
 [Install]
 WantedBy=default.target
+
+[Service]
+Restart=on-failure
+RestartSec=10s

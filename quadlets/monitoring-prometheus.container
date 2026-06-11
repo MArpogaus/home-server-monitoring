@@ -5,7 +5,10 @@ Volume=./configs/prometheus.yaml:/etc/prometheus/prometheus.yaml:Z
 Volume=prometheus-data:/prometheus:Z
 AutoUpdate=registry
 Pod=monitoring.pod
-RestartPolicy=on-failure
 
 [Install]
 WantedBy=default.target
+
+[Service]
+Restart=on-failure
+RestartSec=10s

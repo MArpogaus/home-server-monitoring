@@ -6,7 +6,10 @@ PublishPort=3000:3000/tcp
 Volume=grafana-data:/var/lib/grafana:Z
 AutoUpdate=registry
 Pod=monitoring.pod
-RestartPolicy=on-failure
 
 [Install]
 WantedBy=default.target
+
+[Service]
+Restart=on-failure
+RestartSec=10s

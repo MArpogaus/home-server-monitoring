@@ -5,7 +5,10 @@ Volume=./configs/loki.yaml:/etc/loki/local-config.yaml:Z
 Volume=loki-data:/loki:Z
 AutoUpdate=registry
 Pod=monitoring.pod
-RestartPolicy=on-failure
 
 [Install]
 WantedBy=default.target
+
+[Service]
+Restart=on-failure
+RestartSec=10s
