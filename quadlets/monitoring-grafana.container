@@ -4,8 +4,9 @@ ContainerName=monitoring-grafana
 Environment=GF_DATAPROXY_MAX_CONNS_PER_HOST=2
 PublishPort=3000:3000/tcp
 Volume=grafana-data:/var/lib/grafana:Z
-Network=shared-network
 AutoUpdate=registry
+Pod=monitoring.pod
+RestartPolicy=on-failure
 
 [Install]
 WantedBy=default.target

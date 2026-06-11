@@ -3,8 +3,9 @@ Image=docker.io/prom/prometheus:latest
 ContainerName=monitoring-prometheus
 Volume=./configs/prometheus.yaml:/etc/prometheus/prometheus.yaml:Z
 Volume=prometheus-data:/prometheus:Z
-Network=shared-network
 AutoUpdate=registry
+Pod=monitoring.pod
+RestartPolicy=on-failure
 
 [Install]
 WantedBy=default.target

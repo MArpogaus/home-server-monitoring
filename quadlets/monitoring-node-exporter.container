@@ -4,8 +4,9 @@ ContainerName=monitoring-node-exporter
 PodmanArgs=--volume=/proc:/host/proc:ro \
            --volume=/sys:/host/sys:ro \
            --volume=/:/rootfs:ro
-Network=shared-network
 AutoUpdate=registry
+Pod=monitoring.pod
+RestartPolicy=on-failure
 
 [Install]
 WantedBy=default.target

@@ -3,8 +3,9 @@ Image=docker.io/grafana/loki:3
 ContainerName=monitoring-loki
 Volume=./configs/loki.yaml:/etc/loki/local-config.yaml:Z
 Volume=loki-data:/loki:Z
-Network=shared-network
 AutoUpdate=registry
+Pod=monitoring.pod
+RestartPolicy=on-failure
 
 [Install]
 WantedBy=default.target

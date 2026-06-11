@@ -30,6 +30,7 @@
   become: yes
   become_user: "{{ monitoring_service_user }}"
   loop:
+    - monitoring-pod
     - monitoring-loki
     - monitoring-prometheus
     - monitoring-grafana
