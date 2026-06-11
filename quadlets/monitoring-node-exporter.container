@@ -3,9 +3,9 @@ Image=docker.io/prom/node-exporter:latest
 ContainerName=monitoring-node-exporter
 PodmanArgs=--volume=/proc:/host/proc:ro \
            --volume=/sys:/host/sys:ro \
-           --volume=/:/rootfs:ro \
-           --restart=unless-stopped
+           --volume=/:/rootfs:ro
 Network=shared-network
+AutoUpdate=registry
 
 [Install]
 WantedBy=default.target

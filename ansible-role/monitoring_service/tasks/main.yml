@@ -20,3 +20,18 @@
     scope: user
   become: yes
   become_user: "{{ monitoring_service_user }}"
+
+- name: Enable and start Monitoring Quadlet services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+    scope: user
+  become: yes
+  become_user: "{{ monitoring_service_user }}"
+  loop:
+    - monitoring-loki
+    - monitoring-prometheus
+    - monitoring-grafana
+    - monitoring-node-exporter
+    - monitoring-promtail

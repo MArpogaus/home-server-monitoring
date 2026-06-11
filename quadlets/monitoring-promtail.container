@@ -1,13 +1,13 @@
 [Container]
 Image=docker.io/grafana/promtail:3
 ContainerName=monitoring-promtail
-PodmanArgs=--volume=./configs/promtail.yaml:/etc/promtail/promtail.yaml:ro \
-           --volume=/var/log/journal/:/var/log/journal/:ro \
+Volume=./configs/promtail.yaml:/etc/promtail/promtail.yaml:ro
+PodmanArgs=--volume=/var/log/journal/:/var/log/journal/:ro \
            --volume=/run/log/journal/:/run/log/journal/:ro \
            --volume=/etc/machine-id:/etc/machine-id:ro \
-           --volume=nc-app-logs:/var/log/nextcloud:ro \
-           --restart=unless-stopped
+           --volume=nc-app-logs:/var/log/nextcloud:ro
 Network=shared-network
+AutoUpdate=registry
 Entrypoint=
 Command=-config.expand-env=true -config.file=/etc/promtail/promtail.yaml
 

@@ -1,11 +1,11 @@
 [Container]
 Image=docker.io/grafana/grafana:latest
 ContainerName=monitoring-grafana
-PodmanArgs=--env GF_DATAPROXY_MAX_CONNS_PER_HOST=2 \
-           --publish=3000:3000/tcp \
-           --restart=unless-stopped
+Environment=GF_DATAPROXY_MAX_CONNS_PER_HOST=2
+PublishPort=3000:3000/tcp
 Volume=grafana-data:/var/lib/grafana:Z
 Network=shared-network
+AutoUpdate=registry
 
 [Install]
 WantedBy=default.target
