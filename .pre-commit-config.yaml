@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-yaml
         args: [--allow-multiple-documents]
@@ -10,7 +10,7 @@ repos:
         args: ['--maxkb=1024']
 
   - repo: https://github.com/ansible-community/ansible-lint
-    rev: v24.10.0
+    rev: v26.4.0
     hooks:
       - id: ansible-lint
         files: ansible-role/
