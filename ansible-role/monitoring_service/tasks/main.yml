@@ -18,7 +18,7 @@
   ansible.builtin.systemd:
     daemon_reload: true
     scope: user
-  become: yes
+  become: true
   become_user: "{{ monitoring_service_user }}"
 
 - name: Start Monitoring Quadlet services (enable handled by Quadlet generator)
@@ -26,7 +26,7 @@
     name: "{{ item }}"
     state: started
     scope: user
-  become: yes
+  become: true
   become_user: "{{ monitoring_service_user }}"
   loop:
     - monitoring-pod
