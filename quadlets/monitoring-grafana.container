@@ -2,7 +2,9 @@
 Image=docker.io/grafana/grafana:latest
 ContainerName=monitoring-grafana
 Environment=GF_DATAPROXY_MAX_CONNS_PER_HOST=2
-PublishPort=3000:3000/tcp
+Volume=./configs/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:Z
+Volume=./configs/grafana-dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:Z
+Volume=./configs/dashboards/:/etc/grafana/provisioning/dashboards/node-exporter/:Z
 Volume=grafana-data:/var/lib/grafana:Z
 AutoUpdate=registry
 Pod=monitoring.pod

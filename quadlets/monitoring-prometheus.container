@@ -2,6 +2,7 @@
 Image=docker.io/prom/prometheus:latest
 ContainerName=monitoring-prometheus
 Volume=./configs/prometheus.yaml:/etc/prometheus/prometheus.yaml:Z
+Volume=./configs/prometheus-rules.yaml:/etc/prometheus/prometheus-rules.yaml:Z
 Volume=prometheus-data:/prometheus:Z
 AutoUpdate=registry
 Pod=monitoring.pod
