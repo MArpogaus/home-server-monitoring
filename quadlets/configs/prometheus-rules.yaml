@@ -1,0 +1,35 @@
+groups:
+  - name: node-exporter
+    interval: 30s
+    rules:
+      - alert: HostHighCpuLoad
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host CPU load > 80% (instance {{ $labels.instance }})"
+
+      - alert: HostLowDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} * 100) / node_filesystem_size_bytes{mountpoint="/"} < 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Host disk space < 10% (instance {{ $labels.instance }})"
+
+      - alert: HostMemoryLow
+        expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host memory available < 10% (instance {{ $labels.instance }})"
+
+      - alert: HostSystemdServiceCrashed
+        expr: node_systemd_unit_state{state="failed"} == 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Systemd service {{ $labels.name }} failed (instance {{ $labels.instance }})"
