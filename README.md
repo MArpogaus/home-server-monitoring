@@ -1,6 +1,6 @@
 # service-monitoring
 
-Monitoring stack for Podman Quadlet -- Loki, Prometheus, Grafana, Node Exporter, and Promtail.
+Monitoring stack for Podman Quadlet -- Loki, Prometheus, Grafana, and Node Exporter.
 
 ## Services
 
@@ -10,7 +10,6 @@ Monitoring stack for Podman Quadlet -- Loki, Prometheus, Grafana, Node Exporter,
 | Prometheus | prom/prometheus:latest | 9090 | Metrics collection |
 | Grafana | grafana/grafana:latest | 3000 | Dashboard UI |
 | Node Exporter | prom/node-exporter:latest | 9100 | Host metrics |
-| Promtail | grafana/promtail:3 | -- | Log shipping |
 
 ## Usage
 
@@ -25,7 +24,7 @@ Or manually as the `monitoring` user:
 ```bash
 cp -r quadlets/* ~/.config/containers/systemd/
 systemctl --user daemon-reload
-systemctl --user start monitoring-{loki,prometheus,grafana,node-exporter,promtail}
+systemctl --user start monitoring-{loki,prometheus,grafana,node-exporter}
 ```
 
 ## Network
@@ -34,10 +33,14 @@ All services attach to `shared-network` (bridge 10.89.0.0/24).
 
 ## Ansible Role
 
-The `ansible-role/monitoring_service/` role copies Quadlet files, reloads systemd, and starts services.
+The `ansible-role/monitoring_service/` role is a reference point for the monitoring play in `ansible-base`. Quadlet deployment is handled directly in `site.yml`.
 
 ## Configuration
 
 - `quadlets/configs/loki.yaml` -- Loki storage and schema
 - `quadlets/configs/prometheus.yaml` -- Scrape targets (node, podman containers)
-- `quadlets/configs/promtail.yaml` -- Journal and log scraping
+- `quadlets/configs/prometheus-rules.yaml` -- Alerting rules
+
+## License
+
+MIT -- See LICENSE file

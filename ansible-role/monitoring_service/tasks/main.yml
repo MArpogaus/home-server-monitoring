@@ -1,3 +1,4 @@
 ---
-# Monitoring service role - Quadlet files are deployed via site.yml
-# This role handles monitoring-specific configuration only.
+# Monitoring service role — placeholder.
+# Quadlet deployment is handled directly in ansible-base/site.yml.
+# This file exists so Ansible can resolve the role reference.
