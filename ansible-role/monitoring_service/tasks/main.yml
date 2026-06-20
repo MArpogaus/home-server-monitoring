@@ -1,4 +1,60 @@
 ---
-# Monitoring service role — placeholder.
-# Quadlet deployment is handled directly in ansible-base/site.yml.
-# This file exists so Ansible can resolve the role reference.
+# Monitoring service deployment — fully self-contained
+# Receives: service_name, service_user, service_uid, service_home, service_repo
+
+- name: Deploy static Quadlet files
+  ansible.builtin.copy:
+    src: "{{ service_repo }}/quadlets/{{ item }}"
+    dest: "{{ service_home }}/.config/containers/systemd/"
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: '0644'
+  loop:
+    - monitoring.pod
+    - monitoring-grafana.container
+    - monitoring-loki.container
+    - monitoring-node-exporter.container
+    - monitoring-prometheus.container
+    - grafana-data.volume
+    - loki-data.volume
+    - prometheus-data.volume
+
+- name: Ensure configs directory exists
+  ansible.builtin.file:
+    path: "{{ service_home }}/.config/containers/systemd/configs"
+    state: directory
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: '0755'
+
+- name: Ensure dashboards directory exists
+  ansible.builtin.file:
+    path: "{{ service_home }}/.config/containers/systemd/configs/dashboards"
+    state: directory
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: '0755'
+
+- name: Deploy config files
+  ansible.builtin.copy:
+    src: "{{ service_repo }}/quadlets/configs/{{ item }}"
+    dest: "{{ service_home }}/.config/containers/systemd/configs/{{ item }}"
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: '0644'
+  loop:
+    - loki.yaml
+    - prometheus.yaml
+    - prometheus-rules.yaml
+    - grafana-datasources.yaml
+    - grafana-dashboards.yaml
+
+- name: Deploy dashboard JSON files
+  ansible.builtin.copy:
+    src: "{{ service_repo }}/quadlets/configs/dashboards/{{ item }}"
+    dest: "{{ service_home }}/.config/containers/systemd/configs/dashboards/{{ item }}"
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: '0644'
+  loop:
+    - node-exporter.json
