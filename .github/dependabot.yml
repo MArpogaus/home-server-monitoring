@@ -6,9 +6,3 @@ updates:
       interval: "weekly"
     target-branch: "dev"
     open-pull-requests-limit: 10
-  - package-ecosystem: "docker"
-    directory: "/quadlets"
-    schedule:
-      interval: "weekly"
-    target-branch: "dev"
-    open-pull-requests-limit: 5

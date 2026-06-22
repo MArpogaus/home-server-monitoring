@@ -1,10 +1,10 @@
 [Container]
-Image=docker.io/prom/node-exporter:latest
+Image={{ monitoring_service_node_exporter_image }}
 ContainerName=monitoring-node-exporter
 PodmanArgs=--volume=/proc:/host/proc:ro \
            --volume=/sys:/host/sys:ro \
            --volume=/:/rootfs:ro
-AutoUpdate=registry
+AutoUpdate={{ monitoring_service_auto_update }}
 Pod=monitoring.pod
 
 [Install]

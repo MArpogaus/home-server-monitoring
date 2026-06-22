@@ -1,12 +1,12 @@
 [Container]
-Image=docker.io/grafana/grafana:latest
+Image={{ monitoring_service_grafana_image }}
 ContainerName=monitoring-grafana
-Environment=GF_DATAPROXY_MAX_CONNS_PER_HOST=2
+Environment=GF_DATAPROXY_MAX_CONNS_PER_HOST={{ monitoring_service_grafana_max_conns }}
 Volume=./configs/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:Z
 Volume=./configs/grafana-dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:Z
 Volume=./configs/dashboards/:/etc/grafana/provisioning/dashboards/node-exporter/:Z
 Volume=grafana-data:/var/lib/grafana:Z
-AutoUpdate=registry
+AutoUpdate={{ monitoring_service_auto_update }}
 Pod=monitoring.pod
 
 [Install]

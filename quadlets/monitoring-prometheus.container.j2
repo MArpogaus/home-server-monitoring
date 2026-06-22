@@ -1,10 +1,10 @@
 [Container]
-Image=docker.io/prom/prometheus:latest
+Image={{ monitoring_service_prometheus_image }}
 ContainerName=monitoring-prometheus
 Volume=./configs/prometheus.yaml:/etc/prometheus/prometheus.yaml:Z
 Volume=./configs/prometheus-rules.yaml:/etc/prometheus/prometheus-rules.yaml:Z
 Volume=prometheus-data:/prometheus:Z
-AutoUpdate=registry
+AutoUpdate={{ monitoring_service_auto_update }}
 Pod=monitoring.pod
 
 [Install]

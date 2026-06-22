@@ -1,0 +1,7 @@
+---
+monitoring_service_auto_update: "registry"
+monitoring_service_grafana_image: "docker.io/grafana/grafana:latest"
+monitoring_service_loki_image: "docker.io/grafana/loki:3"
+monitoring_service_prometheus_image: "docker.io/prom/prometheus:latest"
+monitoring_service_node_exporter_image: "docker.io/prom/node-exporter:latest"
+monitoring_service_grafana_max_conns: "2"

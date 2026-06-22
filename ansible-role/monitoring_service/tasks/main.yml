@@ -11,13 +11,20 @@
     mode: '0644'
   loop:
     - monitoring.pod
+    - shared-network.network
+
+- name: Template container Quadlet files (strip .j2)
+  ansible.builtin.template:
+    src: "{{ service_repo }}/quadlets/{{ item }}.j2"
+    dest: "{{ service_home }}/.config/containers/systemd/{{ item }}"
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: '0644'
+  loop:
     - monitoring-grafana.container
     - monitoring-loki.container
     - monitoring-node-exporter.container
     - monitoring-prometheus.container
-    - grafana-data.volume
-    - loki-data.volume
-    - prometheus-data.volume
 
 - name: Ensure configs directory exists
   ansible.builtin.file:

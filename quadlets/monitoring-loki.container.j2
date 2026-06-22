@@ -1,9 +1,9 @@
 [Container]
-Image=docker.io/grafana/loki:3
+Image={{ monitoring_service_loki_image }}
 ContainerName=monitoring-loki
 Volume=./configs/loki.yaml:/etc/loki/local-config.yaml:Z
 Volume=loki-data:/loki:Z
-AutoUpdate=registry
+AutoUpdate={{ monitoring_service_auto_update }}
 Pod=monitoring.pod
 
 [Install]

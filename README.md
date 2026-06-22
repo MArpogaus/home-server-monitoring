@@ -1,8 +1,31 @@
 # service-monitoring
 
-Monitoring stack for Podman Quadlet -- Loki, Prometheus, Grafana, and Node Exporter.
+Monitoring stack — Loki, Prometheus, Grafana, Node Exporter — deployed via Podman Quadlet. Runs rootless under the `monitoring` user.
 
-## Services
+## Structure
+
+```
+service-monitoring/
+├── ansible-role/monitoring_service/
+│   ├── defaults/main.yml            Role default variables (image tags, auto_update)
+│   └── tasks/main.yml               Deployment tasks
+├── quadlets/
+│   ├── monitoring.pod               Pod definition (publishes 3000, 3100, 9090)
+│   ├── *.container.j2               Container Quadlet templates (4, templated)
+│   ├── shared-network.network       Bridge network (10.89.0.0/24)
+│   └── configs/
+│       ├── loki.yaml                Loki storage and schema
+│       ├── prometheus.yaml          Scrape targets (node, podman containers)
+│       ├── prometheus-rules.yaml    Alerting rules
+│       ├── grafana-datasources.yaml  Provisioned datasources
+│       ├── grafana-dashboards.yaml   Dashboard provisioning
+│       └── dashboards/              Pre-built dashboards
+└── .github/workflows/               CI/CD
+```
+
+## Architecture
+
+All services attach to `shared-network` (10.89.0.0/24).
 
 | Service | Image | Port | Purpose |
 |---|---|---|---|
@@ -11,36 +34,52 @@ Monitoring stack for Podman Quadlet -- Loki, Prometheus, Grafana, and Node Expor
 | Grafana | grafana/grafana:latest | 3000 | Dashboard UI |
 | Node Exporter | prom/node-exporter:latest | 9100 | Host metrics |
 
-## Usage
+Prometheus scrapes Node Exporter (host metrics) and Podman containers (via `io.containers.autoupdate=registry` label).
 
-Deploy via Ansible:
+## Role Contract
 
-```bash
-ansible-playbook -i inventory site.yml --tags monitoring
-```
+Inherited variables from `site.yml`:
 
-Or manually as the `monitoring` user:
+| Var | Description |
+|-----|-------------|
+| `service_name` | Service name (`monitoring`) |
+| `service_user` | System user (`monitoring`) |
+| `service_uid` | User UID (default: 1002) |
+| `service_home` | Home dir (`/var/services/monitoring`) |
+| `service_repo` | Repo path (`../service-monitoring`) |
 
-```bash
-cp -r quadlets/* ~/.config/containers/systemd/
-systemctl --user daemon-reload
-systemctl --user start monitoring-{loki,prometheus,grafana,node-exporter}
-```
-
-## Network
-
-All services attach to `shared-network` (bridge 10.89.0.0/24).
-
-## Ansible Role
-
-The `ansible-role/monitoring_service/` role is a reference point for the monitoring play in `ansible-base`. Quadlet deployment is handled directly in `site.yml`.
+Role tasks:
+1. Copy static Quadlet files (pod, network)
+2. Template `.container.j2` files (4 containers)
+3. Copy config files to `configs/` and `configs/dashboards/`
 
 ## Configuration
 
-- `quadlets/configs/loki.yaml` -- Loki storage and schema
-- `quadlets/configs/prometheus.yaml` -- Scrape targets (node, podman containers)
-- `quadlets/configs/prometheus-rules.yaml` -- Alerting rules
+Image tags and container options are configurable via `defaults/main.yml`:
+
+| Variable | Default |
+|---|---|
+| `monitoring_service_auto_update` | `registry` |
+| `monitoring_service_grafana_image` | `docker.io/grafana/grafana:latest` |
+| `monitoring_service_loki_image` | `docker.io/grafana/loki:3` |
+| `monitoring_service_prometheus_image` | `docker.io/prom/prometheus:latest` |
+| `monitoring_service_node_exporter_image` | `docker.io/prom/node-exporter:latest` |
+| `monitoring_service_grafana_max_conns` | `2` |
+
+Override in `secrets/vars.yml` to pin versions or use custom registries.
+
+## Deployment
+
+```bash
+ansible-playbook -i inventory site.yml --tags monitoring_service
+```
+
+## Requirements
+
+- Podman 4.0+ (Quadlet)
+- systemd user instances
+- Ansible
 
 ## License
 
-MIT -- See LICENSE file
+MIT
