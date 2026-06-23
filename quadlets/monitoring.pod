@@ -1,3 +1,7 @@
+[Unit]
+Wants=shared-network-network.service
+After=shared-network-network.service
+
 [Pod]
 PodName=monitoring
 Network=shared-network
