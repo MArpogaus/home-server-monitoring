@@ -65,3 +65,16 @@
     mode: '0644'
   loop:
     - node-exporter.json
+
+- name: Reload systemd user daemon
+  ansible.builtin.command:
+    cmd: "machinectl shell {{ service_user }}@ /usr/bin/systemctl --user daemon-reload"
+  changed_when: true
+  failed_when: false
+
+- name: Restart user manager (triggers Quadlet generator and starts containers)
+  ansible.builtin.systemd:
+    name: "user@{{ service_uid }}.service"
+    state: restarted
+    scope: system
+  failed_when: false
