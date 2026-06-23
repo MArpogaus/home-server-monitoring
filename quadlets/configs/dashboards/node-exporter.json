@@ -64,20 +64,10 @@
     {
       "title": "Load Average",
       "type": "stat",
-      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 16 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
       "targets": [
         {
           "expr": "node_load1"
-        }
-      ]
-    },
-    {
-      "title": "Container Count",
-      "type": "stat",
-      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 16 },
-      "targets": [
-        {
-          "expr": "count(podman_container_running)"
         }
       ]
     }
