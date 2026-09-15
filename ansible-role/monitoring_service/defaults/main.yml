@@ -1,7 +1,24 @@
 ---
 monitoring_service_auto_update: "registry"
+
+# Pinned tags; AutoUpdate=registry follows digest changes of the tag.
 monitoring_service_grafana_image: "docker.io/grafana/grafana:11.5.2"
-monitoring_service_loki_image: "docker.io/grafana/loki:3"
-monitoring_service_prometheus_image: "docker.io/prom/prometheus:latest"
-monitoring_service_node_exporter_image: "docker.io/prom/node-exporter:latest"
+monitoring_service_loki_image: "docker.io/grafana/loki:3.5.0"
+monitoring_service_alloy_image: "docker.io/grafana/alloy:v1.10.0"
+monitoring_service_prometheus_image: "docker.io/prom/prometheus:v3.5.0"
+monitoring_service_alertmanager_image: "docker.io/prom/alertmanager:v0.28.1"
+monitoring_service_node_exporter_image: "docker.io/prom/node-exporter:v1.9.1"
+
+# Resource ceilings for an 8 GB host
+monitoring_service_grafana_extra_args: "--memory=384M"
+monitoring_service_loki_extra_args: "--memory=512M"
+monitoring_service_alloy_extra_args: "--memory=256M"
+monitoring_service_prometheus_extra_args: "--memory=512M"
+monitoring_service_alertmanager_extra_args: "--memory=128M"
+monitoring_service_node_exporter_extra_args: "--memory=64M"
+
 monitoring_service_grafana_max_conns: "2"
+
+# Alert delivery: an ntfy topic URL, e.g. https://ntfy.sh/<random-topic>.
+# Empty = alerts are evaluated but not delivered.
+monitoring_service_ntfy_url: ""

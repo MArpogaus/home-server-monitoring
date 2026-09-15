@@ -1,98 +1,68 @@
 # service-monitoring
 
-Monitoring stack — Loki, Prometheus, Grafana, Node Exporter — deployed via Podman Quadlet. Runs rootless under the `monitoring` user.
+Prometheus, Alertmanager, Grafana, Loki, Alloy and Node Exporter in one rootless
+Podman pod under the `monitoring` user.
 
 ## Architecture
 
-All services attach to `shared-network` (10.89.0.0/24).
-
 ```
-  Node Exporter (9100) ──┐
-                          ├── Prometheus (9090) ── Grafana (3000)
-  Loki (3100) ────────────┘         ↑
-                              alerting rules (CPU, disk, memory, systemd)
+  node-exporter (9100) ─┐
+                         ├─ prometheus (9090) ─ alertmanager (9093) ─ ntfy
+  host journal ─ alloy ──┤                                  │
+                         └─ loki (3100) ──────── grafana (3000)
 ```
 
-| Service | Image | Port | Purpose |
-|---|---|---|---|
-| Loki | grafana/loki:3 | 3100 (localhost) | Log aggregation |
-| Prometheus | prom/prometheus:latest | 9090 (localhost) | Metrics + alerting |
-| Grafana | grafana/grafana:latest | 3000 (all) | Dashboard UI |
-| Node Exporter | prom/node-exporter:latest | 9100 (pod-internal) | Host metrics |
+Everything shares the pod's network namespace and talks over `localhost`.
+Alloy reads `/var/log/journal` directly: every service user's containers log to
+journald (Podman's default log driver), so one shipper covers the whole host.
+The `monitoring` user is in `systemd-journal` and `GroupAdd=keep-groups` carries
+that into the container.
 
-## Task Reference (8 tasks)
+| Container | Image | Purpose |
+|---|---|---|
+| monitoring-prometheus | prom/prometheus:v3.5.0 | Metrics + alert rules |
+| monitoring-alertmanager | prom/alertmanager:v0.28.1 | Alert routing to ntfy |
+| monitoring-grafana | grafana/grafana:11.5.2 | Dashboards |
+| monitoring-loki | grafana/loki:3.5.0 | Log store |
+| monitoring-alloy | grafana/alloy:v1.10.0 | Journal → Loki |
+| monitoring-node-exporter | prom/node-exporter:v1.9.1 | Host metrics incl. hwmon |
 
-| # | Module | Purpose | Rationale |
-|---|--------|---------|-----------|
-| 1 | `copy` (loop 2) | Deploy static Quadlet files (`monitoring.pod`, `shared-network.network`) | Pod + network definitions are static |
-| 2 | `template` (loop 4) | Render `.container.j2` → `.container` | Image tags and auto-update injected via vars |
-| 3 | `file` | Ensure `configs/` directory | Host path for bind-mounted config files |
-| 4 | `file` | Ensure `configs/dashboards/` directory | Grafana dashboard JSON files go here |
-| 5 | `copy` (loop 5) | Deploy config files | Loki, Prometheus (scrape + rules), Grafana (datasources + dashboards) |
-| 6 | `copy` (loop 1) | Deploy dashboard JSON | Node Exporter dashboard with 7 panels |
-| 7 | `command` | `machinectl shell ... systemctl --user daemon-reload` | Re-read Quadlet files |
-| 8 | `systemd` | Restart `user@<uid>.service` | Triggers Quadlet generator |
+All ports are published on `127.0.0.1` only. Reach Grafana with
+`ssh -L 3000:localhost:3000 core@host`.
 
-## Role Contract
+## Alerts
 
-Inherited from `site.yml`:
-
-| Var | Description |
-|---|---|
-| `service_name` | `monitoring` |
-| `service_user` | `monitoring` |
-| `service_uid` | 1002 (default) |
-| `service_home` | `/var/services/monitoring` |
-| `service_repo` | `../service-monitoring` |
+`quadlets/configs/prometheus-rules.yaml`: target down, CPU > 80 %, disk < 10 %,
+memory < 10 %, temperature > 85 °C. Delivery via Alertmanager webhook to
+`monitoring_service_ntfy_url` (empty = evaluated, not delivered).
 
 ## Configuration
 
 | Variable | Default | Controls |
 |---|---|---|
+| `monitoring_service_*_image` | see `defaults/main.yml` | Pinned image tags |
+| `monitoring_service_*_extra_args` | `--memory=...` | Per-container ceilings (8 GB host) |
+| `monitoring_service_ntfy_url` | `""` | ntfy topic URL for alerts |
 | `monitoring_service_auto_update` | `registry` | Podman auto-update |
-| `monitoring_service_grafana_image` | `grafana/grafana:latest` | Grafana image |
-| `monitoring_service_loki_image` | `grafana/loki:3` | Loki image |
-| `monitoring_service_prometheus_image` | `prom/prometheus:latest` | Prometheus image |
-| `monitoring_service_node_exporter_image` | `prom/node-exporter:latest` | Node Exporter image |
 | `monitoring_service_grafana_max_conns` | `2` | Grafana datasource proxy conns |
 
-## Generalization Gaps
+## Role Contract
 
-| What | Where | Hardcoded |
-|---|---|---|
-| Network subnet | `shared-network.network` | `10.89.0.0/24` |
-| Grafana port (all interfaces) | `monitoring.pod` | `3000:3000` |
-| Loki port (localhost only) | `monitoring.pod` | `127.0.0.1:3100:3100` |
-| Prometheus port (localhost only) | `monitoring.pod` | `127.0.0.1:9090:9090` |
-| Alert thresholds | `prometheus-rules.yaml` | CPU >80%, Disk <10%, Mem <10% |
-| Podman container count panel | `node-exporter.json` | Queries `podman_container_running` but no scrape target |
+Inherited from `site.yml`: `service_name`, `service_user`, `service_uid`,
+`service_home`, `service_repo`. File tasks notify `monitoring quadlets changed`
+(daemon-reload + pod restart), so a deploy without changes touches nothing.
 
-## Files
-
-```
-service-monitoring/
-  ansible-role/monitoring_service/
-    defaults/main.yml         # 7 vars: images, auto_update, max_conns
-    tasks/main.yml            # 8 tasks
-  quadlets/
-    monitoring.pod            # Pod: 3000(public), 3100+9090(localhost)
-    shared-network.network    # Bridge 10.89.0.0/24
-    monitoring-*.container.j2 # 4 templated container files
-    configs/                  # Loki, Prometheus, Grafana configs
-    configs/dashboards/       # Pre-built dashboards
-```
-
-## Known Issues
-
-- **Container Count panel shows "No data"** — queries `podman_container_running` but Prometheus doesn't scrape Podman socket. Either add a Podman exporter or remove the panel.
-- **Grafana uses `:latest`** — major version bumps could break on auto-update. Pin in `secrets/vars.yml`.
-- **`shared-network.network` duplicated across repos** — each service user gets their own copy. Podman deduplicates by name, but differing subnet values would silently break.
-
-## Deployment
+## Development
 
 ```bash
-ansible-playbook -i inventory site.yml --tags monitoring_service
+pre-commit install --install-hooks -t pre-commit -t commit-msg -t pre-push
 ```
+
+Plain `pre-commit install` wires up only the pre-commit stage, so the
+commitizen message and branch checks stay dormant. Hooks: shellcheck,
+ansible-lint (which owns YAML style here), commitizen for conventional commits.
+CI runs the same set on push and pull request. Actions are pinned to SHAs, and
+dependabot updates actions and hook revisions weekly against `dev`.
 
 ## License
 

@@ -1,10 +1,15 @@
 [Container]
 Image={{ monitoring_service_prometheus_image }}
 ContainerName=monitoring-prometheus
-Volume=./configs/prometheus.yaml:/etc/prometheus/prometheus.yaml:Z
+Volume=./configs/prometheus.yaml:/etc/prometheus/prometheus.yml:Z
 Volume=./configs/prometheus-rules.yaml:/etc/prometheus/prometheus-rules.yaml:Z
 Volume=prometheus-data:/prometheus:Z
+PodmanArgs={{ monitoring_service_prometheus_extra_args }}
 AutoUpdate={{ monitoring_service_auto_update }}
+HealthCmd=wget -qO /dev/null http://127.0.0.1:9090/-/healthy
+HealthInterval=60s
+HealthStartPeriod=60s
+HealthOnFailure=kill
 Pod=monitoring.pod
 
 [Install]

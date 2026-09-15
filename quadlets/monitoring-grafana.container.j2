@@ -6,7 +6,12 @@ Volume=./configs/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/
 Volume=./configs/grafana-dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:Z
 Volume=./configs/dashboards/:/etc/grafana/provisioning/dashboards/node-exporter/:Z
 Volume=grafana-data:/var/lib/grafana:Z
+PodmanArgs={{ monitoring_service_grafana_extra_args }}
 AutoUpdate={{ monitoring_service_auto_update }}
+HealthCmd=wget -qO /dev/null http://127.0.0.1:3000/api/health
+HealthInterval=60s
+HealthStartPeriod=60s
+HealthOnFailure=kill
 Pod=monitoring.pod
 
 [Install]

@@ -1,0 +1,15 @@
+[Container]
+Image={{ monitoring_service_alertmanager_image }}
+ContainerName=monitoring-alertmanager
+Volume=./configs/alertmanager.yaml:/etc/alertmanager/alertmanager.yml:Z
+Volume=alertmanager-data:/alertmanager:Z
+PodmanArgs={{ monitoring_service_alertmanager_extra_args }}
+AutoUpdate={{ monitoring_service_auto_update }}
+Pod=monitoring.pod
+
+[Install]
+WantedBy=default.target
+
+[Service]
+Restart=on-failure
+RestartSec=10s

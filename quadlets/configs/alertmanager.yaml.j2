@@ -1,0 +1,17 @@
+# Alertmanager — templated by Ansible
+route:
+  receiver: {{ 'ntfy' if monitoring_service_ntfy_url else 'none' }}
+  group_by: [alertname]
+  group_wait: 30s
+  repeat_interval: 12h
+
+receivers:
+  - name: none
+{% if monitoring_service_ntfy_url %}
+  - name: ntfy
+    webhook_configs:
+      # ntfy >= 2.14 renders Alertmanager payloads with this predefined template;
+      # older ntfy still delivers the raw JSON.
+      - url: "{{ monitoring_service_ntfy_url }}?template=alertmanager"
+        send_resolved: true
+{% endif %}

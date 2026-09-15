@@ -1,0 +1,10 @@
+---
+- name: Reload monitoring quadlets
+  ansible.builtin.command: systemctl --user -M monitoring@ daemon-reload  # noqa: command-instead-of-module
+  changed_when: true
+  listen: monitoring quadlets changed
+
+- name: Restart monitoring pod
+  ansible.builtin.command: systemctl --user -M monitoring@ restart monitoring-pod.service  # noqa: command-instead-of-module
+  changed_when: true
+  listen: monitoring quadlets changed

@@ -1,0 +1,26 @@
+[Container]
+Image={{ monitoring_service_alloy_image }}
+ContainerName=monitoring-alloy
+# Ships the host journal (all users' containers log there) to Loki.
+# Journal files are root:systemd-journal 0640; the monitoring user is in that
+# group and keep-groups carries it into the container.
+User=0
+GroupAdd=keep-groups
+SecurityLabelDisable=true
+Volume=./configs/config.alloy:/etc/alloy/config.alloy:ro
+Volume=/var/log/journal:/var/log/journal:ro
+Volume=/etc/machine-id:/etc/machine-id:ro
+Volume=alloy-data:/var/lib/alloy/data
+PodmanArgs={{ monitoring_service_alloy_extra_args }}
+AutoUpdate={{ monitoring_service_auto_update }}
+Pod=monitoring.pod
+
+[Unit]
+After=monitoring-loki.service
+
+[Install]
+WantedBy=default.target
+
+[Service]
+Restart=on-failure
+RestartSec=10s

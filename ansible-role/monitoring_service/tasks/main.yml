@@ -1,46 +1,33 @@
 ---
 # Monitoring service deployment — fully self-contained
-# Receives: service_name, service_user, service_uid, service_home, service_repo
+# Receives: service_name, service_user, service_home, service_repo
 
-- name: Deploy static Quadlet files
-  ansible.builtin.copy:
-    src: "{{ service_repo }}/quadlets/{{ item }}"
-    dest: "{{ service_home }}/.config/containers/systemd/"
-    owner: "{{ service_user }}"
-    group: "{{ service_user }}"
-    mode: '0644'
-  loop:
-    - monitoring.pod
-    - shared-network.network
-
-- name: Template container Quadlet files (strip .j2)
-  ansible.builtin.template:
-    src: "{{ service_repo }}/quadlets/{{ item }}.j2"
-    dest: "{{ service_home }}/.config/containers/systemd/{{ item }}"
-    owner: "{{ service_user }}"
-    group: "{{ service_user }}"
-    mode: '0644'
-  loop:
-    - monitoring-grafana.container
-    - monitoring-loki.container
-    - monitoring-node-exporter.container
-    - monitoring-prometheus.container
-
-- name: Ensure configs directory exists
-  ansible.builtin.file:
-    path: "{{ service_home }}/.config/containers/systemd/configs"
-    state: directory
-    owner: "{{ service_user }}"
-    group: "{{ service_user }}"
-    mode: '0755'
-
-- name: Ensure dashboards directory exists
+- name: Ensure config directories exist
   ansible.builtin.file:
     path: "{{ service_home }}/.config/containers/systemd/configs/dashboards"
     state: directory
     owner: "{{ service_user }}"
     group: "{{ service_user }}"
     mode: '0755'
+
+- name: Deploy static Quadlet files
+  ansible.builtin.copy:
+    src: "{{ service_repo }}/quadlets/monitoring.pod"
+    dest: "{{ service_home }}/.config/containers/systemd/"
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: '0644'
+  notify: monitoring quadlets changed
+
+- name: Template container Quadlet files
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "{{ service_home }}/.config/containers/systemd/{{ item | basename | replace('.j2', '') }}"
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: '0644'
+  loop: "{{ query('fileglob', service_repo ~ '/quadlets/*.container.j2') }}"
+  notify: monitoring quadlets changed
 
 - name: Deploy config files
   ansible.builtin.copy:
@@ -51,28 +38,29 @@
     mode: '0644'
   loop:
     - loki.yaml
+    - config.alloy
     - prometheus.yaml
     - prometheus-rules.yaml
     - grafana-datasources.yaml
     - grafana-dashboards.yaml
+    - dashboards/node-exporter.json
+  notify: monitoring quadlets changed
 
-- name: Deploy dashboard JSON files
-  ansible.builtin.copy:
-    src: "{{ service_repo }}/quadlets/configs/dashboards/{{ item }}"
-    dest: "{{ service_home }}/.config/containers/systemd/configs/dashboards/{{ item }}"
+# 0644, not 0600: alertmanager runs as an in-container uid that maps outside
+# the service user, so a 0600 file is unreadable to it. The home directory is
+# 0750, so the ntfy URL is still not exposed to other users on the host.
+- name: Template Alertmanager config
+  ansible.builtin.template:
+    src: "{{ service_repo }}/quadlets/configs/alertmanager.yaml.j2"
+    dest: "{{ service_home }}/.config/containers/systemd/configs/alertmanager.yaml"
     owner: "{{ service_user }}"
     group: "{{ service_user }}"
     mode: '0644'
-  loop:
-    - node-exporter.json
+  notify: monitoring quadlets changed
 
-- name: Reload systemd user daemon
-  ansible.builtin.command:
-    cmd: "machinectl shell {{ service_user }}@ /usr/bin/systemctl --user daemon-reload"
-  changed_when: true
+- name: Apply quadlet changes now
+  ansible.builtin.meta: flush_handlers
 
-- name: Restart user manager (triggers Quadlet generator and starts containers)
-  ansible.builtin.systemd:
-    name: "user@{{ service_uid }}.service"
-    state: restarted
-    scope: system
+- name: Ensure monitoring pod is running
+  ansible.builtin.command: systemctl --user -M monitoring@ start monitoring-pod.service  # noqa: command-instead-of-module
+  changed_when: false

@@ -1,8 +1,10 @@
 [Container]
 Image={{ monitoring_service_node_exporter_image }}
 ContainerName=monitoring-node-exporter
-PodmanArgs=--volume=/proc:/host/proc:ro --volume=/sys:/host/sys:ro --volume=/:/rootfs:ro --pid=host
-Entrypoint=/bin/node_exporter --path.procfs=/host/proc --path.sysfs=/host/sys --path.rootfs=/rootfs
+PodmanArgs=--volume=/proc:/host/proc:ro --volume=/sys:/host/sys:ro --volume=/:/rootfs:ro --pid=host {{ monitoring_service_node_exporter_extra_args }}
+# Entrypoint= is a single executable; arguments go in Exec=, which podman
+# appends to the image's existing entrypoint (/bin/node_exporter).
+Exec=--path.procfs=/host/proc --path.sysfs=/host/sys --path.rootfs=/rootfs --collector.systemd --collector.hwmon
 AutoUpdate={{ monitoring_service_auto_update }}
 Pod=monitoring.pod
 

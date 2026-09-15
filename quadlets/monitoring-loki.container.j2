@@ -3,7 +3,12 @@ Image={{ monitoring_service_loki_image }}
 ContainerName=monitoring-loki
 Volume=./configs/loki.yaml:/etc/loki/local-config.yaml:Z
 Volume=loki-data:/loki:Z
+PodmanArgs={{ monitoring_service_loki_extra_args }}
 AutoUpdate={{ monitoring_service_auto_update }}
+HealthCmd=wget -qO /dev/null http://127.0.0.1:3100/ready
+HealthInterval=60s
+HealthStartPeriod=120s
+HealthOnFailure=kill
 Pod=monitoring.pod
 
 [Install]
