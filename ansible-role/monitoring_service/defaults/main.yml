@@ -10,12 +10,12 @@ monitoring_service_alertmanager_image: "docker.io/prom/alertmanager:v0.28.1"
 monitoring_service_node_exporter_image: "docker.io/prom/node-exporter:v1.9.1"
 
 # Resource ceilings for an 8 GB host
-monitoring_service_grafana_extra_args: "--memory=384M"
-monitoring_service_loki_extra_args: "--memory=512M"
-monitoring_service_alloy_extra_args: "--memory=256M"
-monitoring_service_prometheus_extra_args: "--memory=512M"
-monitoring_service_alertmanager_extra_args: "--memory=128M"
-monitoring_service_node_exporter_extra_args: "--memory=64M"
+monitoring_service_grafana_extra_args: "--memory=384M --pids-limit=512 --security-opt=no-new-privileges --cap-drop=ALL"
+monitoring_service_loki_extra_args: "--memory=512M --pids-limit=512 --security-opt=no-new-privileges --cap-drop=ALL"
+monitoring_service_alloy_extra_args: "--memory=256M --pids-limit=512 --security-opt=no-new-privileges"
+monitoring_service_prometheus_extra_args: "--memory=512M --pids-limit=512 --security-opt=no-new-privileges --cap-drop=ALL"
+monitoring_service_alertmanager_extra_args: "--memory=128M --pids-limit=512 --security-opt=no-new-privileges --cap-drop=ALL"
+monitoring_service_node_exporter_extra_args: "--memory=64M --pids-limit=512 --security-opt=no-new-privileges"
 
 monitoring_service_grafana_max_conns: "2"
 
