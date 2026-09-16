@@ -8,9 +8,9 @@ Exec=--path.procfs=/host/proc --path.sysfs=/host/sys --path.rootfs=/rootfs --col
 AutoUpdate={{ monitoring_service_auto_update }}
 Pod=monitoring.pod
 
-[Install]
-WantedBy=default.target
-
 [Service]
 Restart=on-failure
 RestartSec=10s
+
+[Install]
+WantedBy=default.target

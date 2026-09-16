@@ -1,3 +1,6 @@
+[Unit]
+After=monitoring-loki.service
+
 [Container]
 Image={{ monitoring_service_alloy_image }}
 ContainerName=monitoring-alloy
@@ -18,12 +21,9 @@ PodmanArgs={{ monitoring_service_alloy_extra_args }}
 AutoUpdate={{ monitoring_service_auto_update }}
 Pod=monitoring.pod
 
-[Unit]
-After=monitoring-loki.service
-
-[Install]
-WantedBy=default.target
-
 [Service]
 Restart=on-failure
 RestartSec=10s
+
+[Install]
+WantedBy=default.target

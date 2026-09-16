@@ -2,7 +2,7 @@
 # Monitoring service deployment — fully self-contained
 # Receives: service_name, service_user, service_home, service_repo
 
-- name: Ensure config directories exist
+- name: Ensure service directories exist
   ansible.builtin.file:
     path: "{{ service_home }}/.config/containers/systemd/configs/dashboards"
     state: directory
@@ -19,7 +19,7 @@
     mode: '0644'
   notify: monitoring quadlets changed
 
-- name: Template container Quadlet files
+- name: Template container Quadlets
   ansible.builtin.template:
     src: "{{ item }}"
     dest: "{{ service_home }}/.config/containers/systemd/{{ item | basename | replace('.j2', '') }}"

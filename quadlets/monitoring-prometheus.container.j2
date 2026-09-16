@@ -12,9 +12,9 @@ HealthStartPeriod=60s
 HealthOnFailure=kill
 Pod=monitoring.pod
 
-[Install]
-WantedBy=default.target
-
 [Service]
 Restart=on-failure
 RestartSec=10s
+
+[Install]
+WantedBy=default.target

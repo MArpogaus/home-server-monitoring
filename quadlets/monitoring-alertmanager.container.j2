@@ -7,9 +7,9 @@ PodmanArgs={{ monitoring_service_alertmanager_extra_args }}
 AutoUpdate={{ monitoring_service_auto_update }}
 Pod=monitoring.pod
 
-[Install]
-WantedBy=default.target
-
 [Service]
 Restart=on-failure
 RestartSec=10s
+
+[Install]
+WantedBy=default.target
