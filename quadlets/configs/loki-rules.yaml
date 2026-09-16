@@ -36,3 +36,28 @@ groups:
           severity: warning
         annotations:
           summary: "{{ $labels.user_unit }} is failing"
+
+  - name: scheduled-jobs
+    interval: 1m
+    rules:
+      # The container rules above group by user_unit, which only rootless
+      # containers have. The backup, snapshot and database dump run as system
+      # units and log under `unit`, so without this a failed backup alerts
+      # nobody. These run daily, so the window is long enough to catch one.
+      - alert: ScheduledJobFailed
+        expr: |
+          sum by (unit) (
+            count_over_time(
+              {job="systemd-journal", unit=~"(btrfs-backup|btrfs-snapshot@.*|pg-dumpall)\\.service"}
+                |= "Failed with result" [6h]
+            )
+          ) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.unit }} failed"
+          description: >-
+            A scheduled backup, snapshot or database dump failed. Check
+            `journalctl -u {{ $labels.unit }}`. Until it succeeds the data it
+            protects has no fresh copy.
