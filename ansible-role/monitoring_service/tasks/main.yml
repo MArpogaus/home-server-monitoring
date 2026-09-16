@@ -38,6 +38,7 @@
     mode: '0644'
   loop:
     - loki.yaml
+    - loki-rules.yaml
     - config.alloy
     - prometheus.yaml
     - prometheus-rules.yaml

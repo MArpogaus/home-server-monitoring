@@ -32,9 +32,17 @@ All ports are published on `127.0.0.1` only. Reach Grafana with
 
 ## Alerts
 
-`quadlets/configs/prometheus-rules.yaml`: target down, CPU > 80 %, disk < 10 %,
-memory < 10 %, temperature > 85 °C. Delivery via Alertmanager webhook to
+Two sources, both delivered through Alertmanager to
 `monitoring_service_ntfy_url` (empty = evaluated, not delivered).
+
+`quadlets/configs/prometheus-rules.yaml` covers the host: target down,
+CPU > 80 %, disk < 10 %, memory < 10 %, temperature > 85 °C.
+
+`quadlets/configs/loki-rules.yaml` covers the containers, using the journal
+Loki already ingests rather than another exporter. `ContainerRestartLoop` fires
+when a unit restarts more than five times in fifteen minutes, and
+`ContainerFailed` catches a unit that has given up entirely and therefore
+stopped producing restart messages.
 
 ## Configuration
 
