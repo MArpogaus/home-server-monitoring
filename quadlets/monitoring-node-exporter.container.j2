@@ -6,6 +6,10 @@ PodmanArgs=--volume=/proc:/host/proc:ro --volume=/sys:/host/sys:ro --volume=/:/r
 # appends to the image's existing entrypoint (/bin/node_exporter).
 Exec=--path.procfs=/host/proc --path.sysfs=/host/sys --path.rootfs=/rootfs --collector.systemd --collector.hwmon
 AutoUpdate={{ monitoring_service_auto_update }}
+HealthCmd=wget -qO /dev/null http://127.0.0.1:9100/metrics
+HealthInterval=60s
+HealthStartPeriod=30s
+HealthOnFailure=kill
 Pod=monitoring.pod
 
 [Service]
