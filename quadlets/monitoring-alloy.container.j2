@@ -7,6 +7,9 @@ ContainerName=monitoring-alloy
 User=0
 GroupAdd=keep-groups
 SecurityLabelDisable=true
+# No :z/:Z on any of these. SecurityLabelDisable above already opts out of
+# SELinux confinement, and relabelling /var/log/journal would break
+# journald for the whole host.
 Volume=./configs/config.alloy:/etc/alloy/config.alloy:ro
 Volume=/var/log/journal:/var/log/journal:ro
 Volume=/etc/machine-id:/etc/machine-id:ro

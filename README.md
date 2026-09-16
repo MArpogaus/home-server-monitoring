@@ -56,8 +56,8 @@ stopped producing restart messages.
 
 ## Role Contract
 
-Inherited from `site.yml`: `service_name`, `service_user`, `service_uid`,
-`service_home`, `service_repo`. File tasks notify `monitoring quadlets changed`
+Inherited from `site.yml`: `service_name`, `service_user`, `service_home`,
+`service_repo`. File tasks notify `monitoring quadlets changed`
 (daemon-reload + pod restart), so a deploy without changes touches nothing.
 
 ## Development
