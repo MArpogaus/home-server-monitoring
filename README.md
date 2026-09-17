@@ -12,7 +12,9 @@ Podman pod under the `monitoring` user.
                          └─ loki (3100) ──────── grafana (3000)
 ```
 
-Everything shares the pod's network namespace and talks over `localhost`.
+Everything shares the pod's network namespace and talks over `127.0.0.1`. A
+rootless pod binds IPv4 only, and `localhost` resolves to `::1` first.
+
 Alloy reads `/var/log/journal` directly: every service user's containers log to
 journald (Podman's default log driver), so one shipper covers the whole host.
 The `monitoring` user is in `systemd-journal` and `GroupAdd=keep-groups` carries
@@ -41,8 +43,13 @@ CPU > 80 %, disk < 10 %, memory < 10 %, temperature > 85 °C.
 `quadlets/configs/loki-rules.yaml` covers the containers, using the journal
 Loki already ingests rather than another exporter. `ContainerRestartLoop` fires
 when a unit restarts more than five times in fifteen minutes, and
-`ContainerFailed` catches a unit that has given up entirely and therefore
-stopped producing restart messages.
+`ContainerFailed` catches a unit that gave up and therefore stopped to produce
+restart messages.
+
+Those two rules group by `user_unit`, which only a rootless container has. The
+backup, the snapshot and the database dump are system units and log under
+`unit`. `ScheduledJobFailed` covers these three, over a six-hour window,
+because they run once a day.
 
 ## Configuration
 
@@ -62,15 +69,7 @@ Inherited from `site.yml`: `service_name`, `service_user`, `service_home`,
 
 ## Development
 
-```bash
-pre-commit install --install-hooks -t pre-commit -t commit-msg -t pre-push
-```
-
-Plain `pre-commit install` wires up only the pre-commit stage, so the
-commitizen message and branch checks stay dormant. Hooks: shellcheck,
-ansible-lint (which owns YAML style here), commitizen for conventional commits.
-CI runs the same set on push and pull request. Actions are pinned to SHAs, and
-dependabot updates actions and hook revisions weekly against `dev`.
+Read [AGENTS.md](../AGENTS.md) for the hook setup and the branch rules.
 
 ## License
 

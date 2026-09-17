@@ -19,10 +19,7 @@ common:
 limits_config:
   allow_structured_metadata: false
 
-# Alert on log patterns rather than metrics. Every container's restarts are
-# already in the journal Alloy ships here, so this needs no extra exporter.
-# With auth_enabled false the tenant is "fake", which is why the rules live in
-# a directory of that name.
+# With auth_enabled false the tenant is "fake", hence the rules directory name.
 ruler:
   storage:
     type: local

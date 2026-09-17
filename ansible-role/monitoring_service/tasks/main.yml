@@ -1,6 +1,4 @@
 ---
-# Monitoring service deployment — fully self-contained
-# Receives: service_name, service_user, service_home, service_repo
 
 - name: Ensure service directories exist
   ansible.builtin.file:
@@ -47,9 +45,8 @@
     - dashboards/node-exporter.json
   notify: monitoring quadlets changed
 
-# 0644, not 0600: alertmanager runs as an in-container uid that maps outside
-# the service user, so a 0600 file is unreadable to it. The home directory is
-# 0750, so the ntfy URL is still not exposed to other users on the host.
+# 0644, not 0600: alertmanager's in-container uid maps outside the service
+# user. The home directory is 0750, so the URL stays private to the host.
 - name: Template Alertmanager config
   ansible.builtin.template:
     src: "{{ service_repo }}/quadlets/configs/alertmanager.yaml.j2"

@@ -3,12 +3,6 @@ groups:
   - name: containers
     interval: 1m
     rules:
-      # systemd logs "Scheduled restart job, restart counter is at N" for every
-      # restart. A container that keeps failing produces one per RestartSec, so
-      # a handful within fifteen minutes means a crash loop rather than a
-      # one-off. This is the signal that would have caught the redis capability
-      # failure, the node-exporter entrypoint and the bunkerweb health action
-      # within minutes each.
       - alert: ContainerRestartLoop
         expr: |
           sum by (user_unit) (
@@ -24,8 +18,7 @@ groups:
             failing rather than recovering. Check `journalctl --user -u
             {{ $labels.user_unit }}` as that service's user.
 
-      # A unit that gives up entirely stops producing restart messages, so the
-      # rule above goes quiet exactly when things are worst.
+      # A unit that gives up stops restarting, so the rule above goes quiet.
       - alert: ContainerFailed
         expr: |
           sum by (user_unit) (
@@ -40,10 +33,7 @@ groups:
   - name: scheduled-jobs
     interval: 1m
     rules:
-      # The container rules above group by user_unit, which only rootless
-      # containers have. The backup, snapshot and database dump run as system
-      # units and log under `unit`, so without this a failed backup alerts
-      # nobody. These run daily, so the window is long enough to catch one.
+      # System units log under `unit`, not `user_unit`, so they need their own rule.
       - alert: ScheduledJobFailed
         expr: |
           sum by (unit) (
