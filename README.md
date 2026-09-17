@@ -69,7 +69,14 @@ Inherited from `site.yml`: `service_name`, `service_user`, `service_home`,
 
 ## Development
 
-Read [AGENTS.md](../AGENTS.md) for the hook setup and the branch rules.
+Work on `dev`. Conventional commits.
+
+```bash
+pre-commit install --install-hooks -t pre-commit -t commit-msg -t pre-push
+```
+
+Plain `pre-commit install` wires up the pre-commit stage only, which leaves the
+commit-message and branch hooks dormant.
 
 ## License
 
