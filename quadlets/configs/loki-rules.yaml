@@ -30,6 +30,29 @@ groups:
         annotations:
           summary: "{{ $labels.user_unit }} is failing"
 
+
+      # The backup exits 0 and logs a skip when the target is not mounted, so a
+      # failure alert never fires for an absent disk. This keys on the success
+      # line instead. The first clause keeps it quiet on hosts that run no
+      # backup at all, where the unit logs nothing. `on()` is required: sum()
+      # drops all labels while absent_over_time keeps job and unit, so a plain
+      # `and` matches nothing and the alert can never fire.
+      - alert: BackupStale
+        expr: |
+          (sum(count_over_time({job="systemd-journal", unit="btrfs-backup.service"} [7d])) > 0)
+          and on()
+          absent_over_time({job="systemd-journal", unit="btrfs-backup.service"} |= "run complete" [48h])
+        for: 30m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No completed backup in 48 hours"
+          description: >-
+            btrfs-backup.service has not logged a completed run for 48 hours.
+            The target is most likely not mounted, which the job treats as a
+            skip rather than an error. Check `systemctl status btrfs-backup`
+            and whether the backup disk is attached.
+
   - name: scheduled-jobs
     interval: 1m
     rules:
