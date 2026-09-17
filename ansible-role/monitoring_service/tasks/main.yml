@@ -62,3 +62,18 @@
 - name: Ensure monitoring pod is running
   ansible.builtin.command: systemctl --user -M monitoring@ start monitoring-pod.service  # noqa: command-instead-of-module
   changed_when: false
+
+# The pod starts asynchronously and a first deploy still has images to pull, so
+# the play would otherwise report success while nothing answers yet.
+- name: Wait for the monitoring stack to answer
+  ansible.builtin.uri:
+    url: "{{ item }}"
+    status_code: 200
+  loop:
+    - http://127.0.0.1:3100/ready
+    - http://127.0.0.1:3000/api/health
+    - http://127.0.0.1:9090/-/ready
+  register: monitoring_service_ready
+  until: monitoring_service_ready is success
+  retries: 30
+  delay: 10
