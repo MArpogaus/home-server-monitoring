@@ -26,5 +26,5 @@ monitoring_service_grafana_max_conns: "2"
 # or set it empty to evaluate alerts and discard them.
 monitoring_service_ntfy_url: "http://127.0.0.1:8081/alerts"
 monitoring_service_ntfy_base_url: "http://127.0.0.1:8081"
-monitoring_service_ntfy_image: "docker.io/binwiederhier/ntfy:v2.11.0"
+monitoring_service_ntfy_image: "docker.io/binwiederhier/ntfy:v2.28.0"
 monitoring_service_ntfy_extra_args: "--memory=128M --pids-limit=512 --security-opt=no-new-privileges"
