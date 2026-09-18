@@ -19,12 +19,12 @@ monitoring_service_node_exporter_extra_args: "--memory=64M --pids-limit=512 --se
 
 monitoring_service_grafana_max_conns: "2"
 
-# Alert delivery: an ntfy topic URL, e.g. https://ntfy.sh/<random-topic>.
-# Empty = alerts are evaluated but not delivered.
 # Alert delivery. ntfy runs in this pod, so this is the loopback inside it and
-# alerts leave no third party. Point it at a hosted ntfy instead if you prefer,
-# or set it empty to evaluate alerts and discard them.
+# alerts reach no third party. Empty evaluates alerts and discards them.
 monitoring_service_ntfy_url: "http://127.0.0.1:8081/alerts"
+# The address the phone uses. Set it to https://<bunker_service_ntfy_server_name>
+# when the ntfy site is published, or the links in a notification point at
+# loopback.
 monitoring_service_ntfy_base_url: "http://127.0.0.1:8081"
 monitoring_service_ntfy_image: "docker.io/binwiederhier/ntfy:v2.28.0"
 monitoring_service_ntfy_extra_args: "--memory=128M --pids-limit=512 --security-opt=no-new-privileges"

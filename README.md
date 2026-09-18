@@ -28,7 +28,7 @@ that into the container.
 | monitoring-loki | grafana/loki:3.5.0 | Log store |
 | monitoring-alloy | grafana/alloy:v1.10.0 | Journal → Loki |
 | monitoring-node-exporter | prom/node-exporter:v1.9.1 | Host metrics incl. hwmon |
-| monitoring-ntfy | binwiederhier/ntfy:v2.11.0 | Push notifications for alerts |
+| monitoring-ntfy | binwiederhier/ntfy:v2.28.0 | Push notifications for alerts |
 
 All ports are published on `127.0.0.1` only. Reach Grafana with
 `ssh -L 3000:localhost:3000 core@host`.
@@ -40,13 +40,17 @@ pod. Alerts therefore reach no third party. Set `monitoring_service_ntfy_url`
 to a hosted topic to change that, or empty to evaluate and discard.
 
 ntfy keeps no message history: a notification is pushed when it happens, and
-that is all an alert needs. Reach it the same way as Grafana,
-`ssh -L 8081:localhost:8081 core@host`, and subscribe to the `alerts` topic
-from the phone app.
+that is all an alert needs.
 
-CAUTION: ntfy listens on loopback only, so the phone gets nothing while it is
-away from the host. Publishing it needs a second BunkerWeb site and an ntfy
-access token. That is a deliberate exposure, so it is not done here.
+ntfy listens on loopback, so the phone reaches it in one of two ways. Over an
+SSH tunnel, `ssh -L 8081:localhost:8081 core@host`, and subscribe to the
+`alerts` topic. Or through BunkerWeb, which serves ntfy on a name of its own
+with TLS and basic auth. See `bunker_service_ntfy_server_name` in
+`service-bunker`. Set `monitoring_service_ntfy_base_url` to that same address.
+
+Alerts must not depend on the services they watch, so ntfy runs in the
+monitoring pod and not behind Nextcloud. A Nextcloud outage still reaches the
+phone.
 
 A notifier on this machine cannot report that this machine is down. `TargetDown`
 is the one alert it cannot deliver. A heartbeat to something off the box is
