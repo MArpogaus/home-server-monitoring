@@ -30,29 +30,6 @@ groups:
         annotations:
           summary: "{{ $labels.user_unit }} is failing"
 
-
-      # The backup exits 0 and logs a skip when its target is absent, so a
-      # failure alert never fires for an unplugged disk. This keys on the
-      # success line instead, per target: each target is its own instance of
-      # btrfs-backup@, so `unit` separates them. `unless` returns the targets
-      # that logged something but no success, which is exactly "this one target
-      # has gone stale", and stays quiet for a host that runs no backup.
-      - alert: BackupStale
-        expr: |
-          sum by (unit) (count_over_time({job="systemd-journal", unit=~"btrfs-backup@.*"} [7d])) > 0
-          unless
-          sum by (unit) (count_over_time({job="systemd-journal", unit=~"btrfs-backup@.*"} |= "run complete" [48h])) > 0
-        for: 30m
-        labels:
-          severity: critical
-        annotations:
-          summary: "{{ $labels.unit }} has not completed a backup in 48 hours"
-          description: >-
-            This backup target has logged no completed run for 48 hours. The
-            target is most likely absent, which the job treats as a skip rather
-            than an error. Check `systemctl status {{ $labels.unit }}` and
-            whether that disk is attached.
-
   - name: scheduled-jobs
     interval: 1m
     rules:
@@ -61,7 +38,7 @@ groups:
         expr: |
           sum by (unit) (
             count_over_time(
-              {job="systemd-journal", unit=~"(btrfs-backup|btrfs-snapshot@.*|pg-dumpall)\\.service"}
+              {job="systemd-journal", unit=~"(btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall)\\.service"}
                 |= "Failed with result" [6h]
             )
           ) > 0

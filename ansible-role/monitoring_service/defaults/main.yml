@@ -21,4 +21,10 @@ monitoring_service_grafana_max_conns: "2"
 
 # Alert delivery: an ntfy topic URL, e.g. https://ntfy.sh/<random-topic>.
 # Empty = alerts are evaluated but not delivered.
-monitoring_service_ntfy_url: ""
+# Alert delivery. ntfy runs in this pod, so this is the loopback inside it and
+# alerts leave no third party. Point it at a hosted ntfy instead if you prefer,
+# or set it empty to evaluate alerts and discard them.
+monitoring_service_ntfy_url: "http://127.0.0.1:8081/alerts"
+monitoring_service_ntfy_base_url: "http://127.0.0.1:8081"
+monitoring_service_ntfy_image: "docker.io/binwiederhier/ntfy:v2.11.0"
+monitoring_service_ntfy_extra_args: "--memory=128M --pids-limit=512 --security-opt=no-new-privileges"

@@ -1,0 +1,21 @@
+[Container]
+Image={{ monitoring_service_ntfy_image }}
+ContainerName=monitoring-ntfy
+# Configured by environment, so there is no config file to template.
+Environment=NTFY_LISTEN_HTTP=:8081
+Environment=NTFY_BASE_URL={{ monitoring_service_ntfy_base_url }}
+Environment=NTFY_BEHIND_PROXY=true
+Exec=serve
+PodmanArgs={{ monitoring_service_ntfy_extra_args }}
+Pod=monitoring.pod
+AutoUpdate={{ monitoring_service_auto_update }}
+HealthCmd=wget -qO- http://127.0.0.1:8081/v1/health
+HealthInterval=60s
+HealthStartPeriod=30s
+
+[Service]
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=default.target
