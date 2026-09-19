@@ -6,10 +6,6 @@ Volume=./configs/loki-rules.yaml:/etc/loki/rules/fake/rules.yaml:Z
 Volume=loki-data:/loki:Z
 PodmanArgs={{ monitoring_service_loki_extra_args }}
 AutoUpdate={{ monitoring_service_auto_update }}
-HealthCmd=wget -qO /dev/null http://127.0.0.1:3100/metrics
-HealthInterval=60s
-HealthStartPeriod=300s
-HealthOnFailure=kill
 Pod=monitoring.pod
 
 [Service]
