@@ -2,12 +2,12 @@
 monitoring_service_auto_update: "registry"
 
 # Pinned tags; AutoUpdate=registry follows digest changes of the tag.
-monitoring_service_grafana_image: "docker.io/grafana/grafana:11.5.2"
-monitoring_service_loki_image: "docker.io/grafana/loki:3.5.0"
-monitoring_service_alloy_image: "docker.io/grafana/alloy:v1.10.0"
-monitoring_service_prometheus_image: "docker.io/prom/prometheus:v3.5.0"
-monitoring_service_alertmanager_image: "docker.io/prom/alertmanager:v0.28.1"
-monitoring_service_node_exporter_image: "docker.io/prom/node-exporter:v1.9.1"
+monitoring_service_grafana_image: "docker.io/grafana/grafana:13.2.2"
+monitoring_service_loki_image: "docker.io/grafana/loki:3.7.8"
+monitoring_service_alloy_image: "docker.io/grafana/alloy:v1.19.2"
+monitoring_service_prometheus_image: "docker.io/prom/prometheus:v3.14.0"
+monitoring_service_alertmanager_image: "docker.io/prom/alertmanager:v0.34.1"
+monitoring_service_node_exporter_image: "docker.io/prom/node-exporter:v1.12.1"
 
 # Resource ceilings for an 8 GB host
 monitoring_service_grafana_extra_args: "--memory=384M --pids-limit=512 --security-opt=no-new-privileges --cap-drop=ALL"

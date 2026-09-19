@@ -22,12 +22,12 @@ that into the container.
 
 | Container | Image | Purpose |
 |---|---|---|
-| monitoring-prometheus | prom/prometheus:v3.5.0 | Metrics + alert rules |
-| monitoring-alertmanager | prom/alertmanager:v0.28.1 | Alert routing to ntfy |
-| monitoring-grafana | grafana/grafana:11.5.2 | Dashboards |
-| monitoring-loki | grafana/loki:3.5.0 | Log store |
-| monitoring-alloy | grafana/alloy:v1.10.0 | Journal → Loki |
-| monitoring-node-exporter | prom/node-exporter:v1.9.1 | Host metrics incl. hwmon |
+| monitoring-prometheus | prom/prometheus:v3.14.0 | Metrics + alert rules |
+| monitoring-alertmanager | prom/alertmanager:v0.34.1 | Alert routing to ntfy |
+| monitoring-grafana | grafana/grafana:13.2.2 | Dashboards |
+| monitoring-loki | grafana/loki:3.7.8 | Log store |
+| monitoring-alloy | grafana/alloy:v1.19.2 | Journal → Loki |
+| monitoring-node-exporter | prom/node-exporter:v1.12.1 | Host metrics incl. hwmon |
 | monitoring-ntfy | binwiederhier/ntfy:v2.28.0 | Push notifications for alerts |
 
 All ports are published on `127.0.0.1` only. Reach Grafana with
