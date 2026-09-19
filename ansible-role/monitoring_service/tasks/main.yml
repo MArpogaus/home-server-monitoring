@@ -1,67 +1,8 @@
 ---
 
-- name: Ensure service directories exist
-  ansible.builtin.file:
-    path: "{{ service_home }}/.config/containers/systemd/configs/dashboards"
-    state: directory
-    owner: "{{ service_user }}"
-    group: "{{ service_user }}"
-    mode: '0755'
-
-- name: Deploy static Quadlet files
-  ansible.builtin.copy:
-    src: "{{ service_repo }}/quadlets/monitoring.pod"
-    dest: "{{ service_home }}/.config/containers/systemd/"
-    owner: "{{ service_user }}"
-    group: "{{ service_user }}"
-    mode: '0644'
-  notify: monitoring quadlets changed
-
-- name: Template container Quadlets
-  ansible.builtin.template:
-    src: "{{ item }}"
-    dest: "{{ service_home }}/.config/containers/systemd/{{ item | basename | replace('.j2', '') }}"
-    owner: "{{ service_user }}"
-    group: "{{ service_user }}"
-    mode: '0644'
-  loop: "{{ query('fileglob', service_repo ~ '/quadlets/*.container.j2') }}"
-  notify: monitoring quadlets changed
-
-- name: Deploy config files
-  ansible.builtin.copy:
-    src: "{{ service_repo }}/quadlets/configs/{{ item }}"
-    dest: "{{ service_home }}/.config/containers/systemd/configs/{{ item }}"
-    owner: "{{ service_user }}"
-    group: "{{ service_user }}"
-    mode: '0644'
-  loop:
-    - loki.yaml
-    - loki-rules.yaml
-    - config.alloy
-    - prometheus.yaml
-    - prometheus-rules.yaml
-    - grafana-datasources.yaml
-    - grafana-dashboards.yaml
-    - dashboards/node-exporter.json
-  notify: monitoring quadlets changed
-
-# 0644, not 0600: alertmanager's in-container uid maps outside the service
-# user. The home directory is 0750, so the URL stays private to the host.
-- name: Template Alertmanager config
-  ansible.builtin.template:
-    src: "{{ service_repo }}/quadlets/configs/alertmanager.yaml.j2"
-    dest: "{{ service_home }}/.config/containers/systemd/configs/alertmanager.yaml"
-    owner: "{{ service_user }}"
-    group: "{{ service_user }}"
-    mode: '0644'
-  notify: monitoring quadlets changed
-
-- name: Apply quadlet changes now
-  ansible.builtin.meta: flush_handlers
-
-- name: Ensure monitoring pod is running
-  ansible.builtin.command: systemctl --user -M monitoring@ start monitoring-pod.service  # noqa: command-instead-of-module
-  changed_when: false
+- name: Deploy the Quadlets
+  ansible.builtin.import_role:
+    name: quadlet_service
 
 # The pod starts asynchronously and a first deploy still has images to pull, so
 # the play would otherwise report success while nothing answers yet.

@@ -83,8 +83,10 @@ because they run once a day.
 ## Role Contract
 
 Inherited from `site.yml`: `service_name`, `service_user`, `service_home`,
-`service_repo`. File tasks notify `monitoring quadlets changed`
-(daemon-reload + pod restart), so a deploy without changes touches nothing.
+`service_repo`. The role imports `quadlet_service` from `ansible-base`, which
+deploys everything under `quadlets/`: `.j2` files are templated, all other
+files are copied, and the pod restarts only when one of them changed.
+Nothing beyond the shared role: every file under `quadlets/configs/` deploys as it is, `alertmanager.yaml.j2` is the one template.
 
 ## Development
 
