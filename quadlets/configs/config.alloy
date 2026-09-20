@@ -1,5 +1,4 @@
-// Ship the host journal to Loki. Rootless containers of every service user log
-// to journald (podman's default log driver), so this covers all of them.
+// Ship the host journal to Loki; every service user's containers log there.
 loki.source.journal "host" {
   path           = "/var/log/journal"
   max_age        = "12h"
