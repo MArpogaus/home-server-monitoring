@@ -37,9 +37,9 @@ All ports are published on `127.0.0.1` only. Reach Grafana with
 ## Dashboards
 
 Four provisioned dashboards under `quadlets/configs/dashboards/`, linked to
-each other in the top bar. They are generated: `dashboards/gen_dashboards.py`
-holds the queries and the layout, its output is committed, and a change is
-made in the generator.
+each other in the top bar. They are generated: `gen_dashboards.py` holds the
+queries and the layout, its output is committed, and a change is made in the
+generator.
 
 | Dashboard | Source | Shows |
 |---|---|---|
