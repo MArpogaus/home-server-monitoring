@@ -42,6 +42,14 @@ to a hosted topic to change that, or empty to evaluate and discard.
 ntfy keeps no message history: a notification is pushed when it happens, and
 that is all an alert needs.
 
+Two kinds of alert share the topic. States (a failing container, a failed
+backup, low disk) fire, repeat every 12 h and send a resolved message. Events
+(an SSH login with user and IP, a host boot, a staged update, a BunkerWeb ban,
+a BunkerWeb critical error) carry `severity: info`, are sent once and never
+resolve. The event rules read the journal through Loki, so they depend on
+Alloy labelling the stream `job="systemd-journal"`; Alloy 1.19 stopped doing
+that by itself, and `config.alloy` pins the label.
+
 ntfy listens on loopback, so the phone reaches it in one of two ways. Over an
 SSH tunnel, `ssh -L 8081:localhost:8081 core@host`, and subscribe to the
 `alerts` topic. Or through BunkerWeb, which serves ntfy on a name of its own
