@@ -1,7 +1,7 @@
 apiVersion: 1
 
 providers:
-  - name: node-exporter
+  - name: home-server
     type: file
     options:
-      path: /etc/grafana/provisioning/dashboards/node-exporter
+      path: /etc/grafana/provisioning/dashboards/home-server

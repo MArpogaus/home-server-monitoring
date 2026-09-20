@@ -117,9 +117,9 @@ groups:
         expr: |
           sum by (user, ip) (
             count_over_time(
-              {job="systemd-journal", syslog_identifier="php-fpm"}
-                |= "Login failed"
-                | pattern "<_>Login failed: <user> (Remote IP: <ip>)<_>" [2m]
+              {job="systemd-journal", syslog_identifier="nextcloud"}
+                |= "Login failed: '"
+                | regexp "Login failed: '(?P<user>[^']+)' \\(Remote IP: '(?P<ip>[^']+)'\\)" [2m]
             )
           ) > 0
         labels:

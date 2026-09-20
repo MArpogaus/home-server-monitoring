@@ -34,6 +34,25 @@ container.
 All ports are published on `127.0.0.1` only. Reach Grafana with
 `ssh -L 3000:localhost:3000 core@host`.
 
+## Dashboards
+
+Four provisioned dashboards under `quadlets/configs/dashboards/`, linked to
+each other in the top bar. They are generated: `dashboards/gen_dashboards.py`
+holds the queries and the layout, its output is committed, and a change is
+made in the generator.
+
+| Dashboard | Source | Shows |
+|---|---|---|
+| Host | Prometheus | CPU, load, memory, pressure stall, disks, network, temperatures |
+| Proxy | Loki | BunkerWeb access log by site and status, denials, ModSecurity rule hits, bans, certificate events |
+| Nextcloud | Loki | nginx access log (latency, status, clients, paths), the Nextcloud log by level, failed logins, background containers, database |
+| System log | Loki, Alertmanager | Active alerts, unit failures, container state changes, restarts, SSH logins, updates and boots, scheduled jobs, SELinux and OOM |
+
+The Loki panels parse the nginx JSON access log and BunkerWeb's access line
+with `pattern`; a change to either format is a change to the generator. The
+datasources carry fixed uids (`prometheus`, `loki`, `alertmanager`) so the
+dashboards work on every host.
+
 The pod runs with `LogDriver=passthrough` (`quadlets/container.d/log.conf`).
 Loki has no health check: its image carries neither `wget` nor a shell, so
 every `HealthCmd` exits 1, and with `HealthOnFailure=kill` that was a restart
