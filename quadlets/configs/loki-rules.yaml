@@ -51,3 +51,65 @@ groups:
             A scheduled backup, snapshot or database dump failed. Check
             `journalctl -u {{ $labels.unit }}`. Until it succeeds the data it
             protects has no fresh copy.
+
+  - name: events
+    interval: 1m
+    rules:
+      # Events, not states: severity info routes to ntfy without a "resolved" message.
+      - alert: SshLogin
+        expr: |
+          sum by (user, ip) (
+            count_over_time(
+              {job="systemd-journal", unit="sshd.service"}
+                |= "Accepted publickey"
+                | pattern "Accepted publickey for <user> from <ip> port <_>" [2m]
+            )
+          ) > 0
+        labels:
+          severity: info
+        annotations:
+          summary: "SSH login: {{ $labels.user }} from {{ $labels.ip }}"
+
+      - alert: HostBooted
+        expr: |
+          sum(count_over_time({job="systemd-journal", unit="init.scope"} |= "Startup finished in" [2m])) > 0
+        labels:
+          severity: info
+        annotations:
+          summary: "The host booted"
+
+      - alert: UpdateStaged
+        expr: |
+          sum(count_over_time({job="systemd-journal", unit=~"rpm-ostreed.service|auto-reboot-staged.service"}
+                |~ "[Ss]taged|Rebooting" [2m])) > 0
+        labels:
+          severity: info
+        annotations:
+          summary: "rpm-ostree staged an update or the auto-reboot fired"
+
+      - alert: BunkerWebBan
+        expr: |
+          sum by (ip) (
+            count_over_time(
+              {job="systemd-journal", container="bunker-nginx"}
+                |= "[BADBEHAVIOR]" |= "is banned for"
+                | pattern "<_>[BADBEHAVIOR] IP <ip> is banned for <_>" [2m]
+            )
+          ) > 0
+        labels:
+          severity: info
+        annotations:
+          summary: "BunkerWeb banned {{ $labels.ip }} (bad behavior)"
+
+      - alert: BunkerWebError
+        expr: |
+          sum(count_over_time(
+            {job="systemd-journal", container=~"bunker-.*"}
+              |~ "\\[(crit|alert|emerg)\\]|\\[ERROR\\]" [5m]
+          )) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "BunkerWeb logged a critical error"
+          description: "Check `journalctl _UID=1001 -p err` on the host; DNS timeouts and denied clients are not counted here."

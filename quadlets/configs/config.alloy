@@ -32,6 +32,12 @@ loki.relabel "journal" {
     source_labels = ["__journal_container_name"]
     target_label  = "container"
   }
+
+  // Alloy 1.19 names the stream after the component; the rules select on this.
+  rule {
+    target_label = "job"
+    replacement  = "systemd-journal"
+  }
 }
 
 loki.write "local" {

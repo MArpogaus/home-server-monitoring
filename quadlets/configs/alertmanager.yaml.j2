@@ -4,6 +4,15 @@ route:
   group_by: [alertname]
   group_wait: 30s
   repeat_interval: 12h
+{% if monitoring_service_ntfy_url %}
+  routes:
+    # Events (logins, boots, bans): one message each, no "resolved" follow-up.
+    - matchers: [severity="info"]
+      receiver: ntfy-events
+      group_by: [alertname, user, ip]
+      group_wait: 10s
+      repeat_interval: 1h
+{% endif %}
 
 receivers:
   - name: none
@@ -14,4 +23,8 @@ receivers:
       # older ntfy still delivers the raw JSON.
       - url: "{{ monitoring_service_ntfy_url }}?template=alertmanager"
         send_resolved: true
+  - name: ntfy-events
+    webhook_configs:
+      - url: "{{ monitoring_service_ntfy_url }}?template=alertmanager"
+        send_resolved: false
 {% endif %}
