@@ -3,10 +3,12 @@ groups:
   - name: containers
     interval: 1m
     rules:
+      # Manager messages only: a container that quotes these strings in its own
+      # output (Loki does, for its rules) must not trip them.
       - alert: ContainerRestartLoop
         expr: |
           sum by (user_unit) (
-            count_over_time({job="systemd-journal"} |= "Scheduled restart job" [15m])
+            count_over_time({job="systemd-journal", syslog_identifier="systemd"} |= "Scheduled restart job" [15m])
           ) > 5
         for: 5m
         labels:
@@ -22,7 +24,7 @@ groups:
       - alert: ContainerFailed
         expr: |
           sum by (user_unit) (
-            count_over_time({job="systemd-journal"} |= "Failed with result" [10m])
+            count_over_time({job="systemd-journal", syslog_identifier="systemd"} |= "Failed with result" [10m])
           ) > 0
         for: 10m
         labels:
@@ -38,7 +40,7 @@ groups:
         expr: |
           sum by (unit) (
             count_over_time(
-              {job="systemd-journal", unit=~"(btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall)\\.service"}
+              {job="systemd-journal", syslog_identifier="systemd", unit=~"(btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall)\\.service"}
                 |= "Failed with result" [6h]
             )
           ) > 0
@@ -101,19 +103,6 @@ groups:
         annotations:
           summary: "BunkerWeb banned {{ $labels.ip }} (bad behavior)"
 
-      - alert: BunkerWebError
-        expr: |
-          sum(count_over_time(
-            {job="systemd-journal", container=~"bunker-.*"}
-              |~ "\\[(crit|alert|emerg)\\]|\\[ERROR\\]" [5m]
-          )) > 0
-        for: 1m
-        labels:
-          severity: warning
-        annotations:
-          summary: "BunkerWeb logged a critical error"
-          description: "Check `journalctl _UID=1001 -p err` on the host; DNS timeouts and denied clients are not counted here."
-
       - alert: SshLoginFailed
         expr: |
           sum(count_over_time({job="systemd-journal", unit="sshd.service"}
@@ -139,20 +128,26 @@ groups:
 
       - alert: BackupDone
         expr: |
-          sum by (unit) (count_over_time({job="systemd-journal", unit=~"btrfs-backup@.*"}
+          sum by (unit) (count_over_time({job="systemd-journal", syslog_identifier="systemd", unit=~"btrfs-backup@.*"}
                 |= "Deactivated successfully" [2m])) > 0
         labels:
           severity: info
         annotations:
           summary: "{{ $labels.unit }} finished"
 
-      - alert: ImageUpdated
+      - alert: ImagePulled
         expr: |
-          sum by (user_unit) (count_over_time({job="systemd-journal"} |= "Trying to pull" [2m])) > 0
+          sum by (image) (
+            count_over_time(
+              {job="systemd-journal", syslog_identifier="podman"}
+                |= "Trying to pull"
+                | pattern "Trying to pull <image>..." [2m]
+            )
+          ) > 0
         labels:
           severity: info
         annotations:
-          summary: "podman auto-update pulled a new image for {{ $labels.user_unit }}"
+          summary: "podman pulled {{ $labels.image }}"
 
   - name: host
     interval: 1m
@@ -176,6 +171,19 @@ groups:
         annotations:
           summary: "More than 20 enforced SELinux denials in 15 minutes"
           description: "`ausearch -m AVC -ts recent` on the host. pasta's capability probes at pod start are excluded."
+
+      - alert: BunkerWebError
+        expr: |
+          sum(count_over_time(
+            {job="systemd-journal", container=~"bunker-.*"}
+              |~ "\\[(crit|alert|emerg)\\]|\\[ERROR\\]" [5m]
+          )) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "BunkerWeb logged a critical error"
+          description: "Check `journalctl _UID=$(id -u proxy) -p err` on the host; DNS timeouts and denied clients are not counted here."
 
       - alert: CertificateRenewalFailed
         expr: |

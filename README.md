@@ -19,8 +19,7 @@ rootless pod binds IPv4 only, and `localhost` resolves to `::1` first.
 Alloy reads `/var/log/journal` directly: every service user's containers log
 to the host journal, so one shipper covers the whole host. The `monitoring`
 user is in `systemd-journal` and `GroupAdd=keep-groups` carries that into the
-container. Promtail, which the original design used per service, reaches end
-of life in March 2026.
+container.
 
 | Container | Image | Purpose |
 |---|---|---|
@@ -44,9 +43,9 @@ its WAL and needs some minutes before `/ready` answers.
 
 ## Alerts
 
-Two sources, one delivery path: Prometheus rules cover the host, Loki rules
-read the journal Alloy already ships (no podman exporter), both go to
-Alertmanager, which delivers to ntfy in this pod. Alerts reach no third party.
+Two sources, one delivery path. Prometheus rules cover the host. Loki rules
+read the journal Alloy already ships, so there is no podman exporter. Both go
+to Alertmanager, which delivers to ntfy in this pod. Alerts reach no third party.
 Set `monitoring_service_ntfy_url` to a hosted topic to change that, or empty
 to evaluate and discard. ntfy keeps no message history: a notification is
 pushed when it happens, and that is all an alert needs.
@@ -65,7 +64,9 @@ message: {{.commonAnnotations.summary}}
 ```
 
 So a rule's `summary` is the whole message on the phone; keep it one line and
-put the labels that matter into it.
+put the labels that matter into it. Alertmanager groups by nothing
+(`group_by: ['...']`): a group of two alerts shares only the annotations both
+carry, and ntfy renders a missing `summary` as `<no value>`.
 
 | Alert | Source | Kind |
 |---|---|---|
@@ -73,25 +74,21 @@ put the labels that matter into it.
 | `ContainerRestartLoop` (>5 restarts in 15 min), `ContainerFailed` | Loki, by `user_unit` | state |
 | `ScheduledJobFailed` (backup, snapshot, dump; 6 h window) | Loki, by `unit` | state |
 | `OomKill`, `SelinuxDenials` (>20 enforced in 15 min, pasta excluded), `BunkerWebError`, `CertificateRenewalFailed` | Loki | state |
-| `SshLogin` (user, IP), `SshLoginFailed`, `NextcloudLoginFailed` (user, IP), `HostBooted`, `UpdateStaged`, `BunkerWebBan` (IP), `BackupDone`, `ImageUpdated` | Loki | event |
+| `SshLogin` (user, IP), `SshLoginFailed`, `NextcloudLoginFailed` (user, IP), `HostBooted`, `UpdateStaged`, `BunkerWebBan` (IP), `BackupDone`, `ImagePulled` (image) | Loki | event |
 
 A container restart loop is the single highest-value alert here: it is how
 every container-level bug in this project first showed itself. A deploy that
-restarts a pod also produces restart lines, so `ContainerRestartLoop` and
-`ContainerFailed` can fire once right after a deploy and resolve within
-fifteen minutes; `deploy.sh` posts its own result to the topic, which explains
-them.
+restarts a pod produces restart lines too, so both can fire once after a
+deploy and resolve within fifteen minutes.
 
-The Loki rules depend on two labels Alloy sets in `config.alloy`:
-`job="systemd-journal"` (Alloy 1.19 names the stream after the component by
-itself, and every rule was silently dead until the label was pinned) and the
-*subject* unit of a manager message (`UNIT`/`USER_UNIT` fields) in `unit` /
-`user_unit`, without which "Failed with result" lines carry the manager's unit
-instead of the failing one.
+The Loki rules select on `job="systemd-journal"` and on `unit` / `user_unit`.
+`config.alloy` sets both and says why. The systemd rules also select
+`syslog_identifier="systemd"`: Loki's ruler quotes every rule's match string
+in its own log, and at log level info those lines tripped the rules they came
+from (`loki.yaml` runs it at `warn` for the same reason).
 
-A notifier on this machine cannot report that this machine is down.
-`TargetDown` is the one alert it cannot deliver; a heartbeat to something off
-the box is what covers that, and is not done.
+A notifier on this machine cannot report that this machine is down. A
+heartbeat to something off the box would cover that; it is not done.
 
 ### Reaching ntfy
 
@@ -143,18 +140,11 @@ Inherited from `site.yml`: `service_name`, `service_user`, `service_home`,
 `service_repo`. The role imports `quadlet_service` from `ansible-base`, which
 deploys everything under `quadlets/`: `.j2` files are templated, all other
 files are copied, and the pod restarts only when one of them changed.
-`alertmanager.yaml.j2` is the one template.
+`alertmanager.yaml.j2` is the one templated config file.
 
 ## Development
 
-Work on `dev`. Conventional commits.
-
-```bash
-pre-commit install --install-hooks -t pre-commit -t commit-msg -t pre-push
-```
-
-Plain `pre-commit install` wires up the pre-commit stage only, which leaves the
-commit-message and branch hooks dormant.
+Work on `dev`. Conventional commits. Hook setup: `ansible-base/README.md`.
 
 ## License
 

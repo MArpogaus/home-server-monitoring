@@ -10,7 +10,6 @@ alerting:
     - static_configs:
         - targets: ['127.0.0.1:9093']
 
-# All targets share the pod's network namespace.
 scrape_configs:
   - job_name: node
     static_configs:

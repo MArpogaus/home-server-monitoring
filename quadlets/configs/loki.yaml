@@ -3,6 +3,10 @@ auth_enabled: false
 server:
   http_listen_port: 3100
   grpc_listen_port: 9096
+  # At info the ruler logs every query it runs, once a minute per rule. Those
+  # lines quote the rules' match strings, and they land in the journal that
+  # the rules read, so every |= rule matched its own evaluation log.
+  log_level: warn
 
 common:
   instance_addr: 127.0.0.1
@@ -19,7 +23,6 @@ common:
 limits_config:
   allow_structured_metadata: false
 
-# With auth_enabled false the tenant is "fake", hence the rules directory name.
 ruler:
   storage:
     type: local

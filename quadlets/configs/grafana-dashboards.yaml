@@ -5,4 +5,3 @@ providers:
     type: file
     options:
       path: /etc/grafana/provisioning/dashboards/node-exporter
-      foldersFromFilesStructure: false

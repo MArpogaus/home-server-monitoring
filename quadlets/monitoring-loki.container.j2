@@ -2,6 +2,7 @@
 Image={{ monitoring_service_loki_image }}
 ContainerName=monitoring-loki
 Volume=./configs/loki.yaml:/etc/loki/local-config.yaml:Z
+# With auth_enabled false the tenant is "fake", hence the directory name.
 Volume=./configs/loki-rules.yaml:/etc/loki/rules/fake/rules.yaml:Z
 Volume=loki-data:/loki:Z
 PodmanArgs={{ monitoring_service_loki_extra_args }}

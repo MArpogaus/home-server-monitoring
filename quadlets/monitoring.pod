@@ -1,6 +1,5 @@
 [Pod]
 PodName=monitoring
-# Grafana is blocked by firewalld; reach it via SSH tunnel: ssh -L 3000:localhost:3000
 PublishPort=127.0.0.1:3000:3000/tcp
 PublishPort=127.0.0.1:3100:3100/tcp
 PublishPort=127.0.0.1:9090:9090/tcp

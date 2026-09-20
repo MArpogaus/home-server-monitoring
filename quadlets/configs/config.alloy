@@ -1,10 +1,7 @@
-// Ship the host journal to Loki; every service user's containers log there.
 loki.source.journal "host" {
   path           = "/var/log/journal"
   max_age        = "12h"
-  format_as_json = false
   relabel_rules  = loki.relabel.journal.rules
-  labels         = { job = "systemd-journal" }
   forward_to     = [loki.write.local.receiver]
 }
 

@@ -1,15 +1,15 @@
 # Alertmanager — templated by Ansible
 route:
   receiver: {{ 'ntfy' if monitoring_service_ntfy_url else 'none' }}
-  group_by: [alertname]
+  # One notification per alert: a group shares only the annotations common to
+  # all its members, and ntfy renders a missing one as "<no value>".
+  group_by: ['...']
   group_wait: 30s
   repeat_interval: 12h
 {% if monitoring_service_ntfy_url %}
   routes:
-    # Events (logins, boots, bans): one message each, no "resolved" follow-up.
     - matchers: [severity="info"]
       receiver: ntfy-events
-      group_by: [alertname, user, ip]
       group_wait: 10s
       repeat_interval: 1h
 {% endif %}
@@ -17,8 +17,7 @@ route:
 receivers:
   - name: none
 {% if monitoring_service_ntfy_url %}
-  # ntfy renders title and message from the Alertmanager payload (template=yes);
-  # the query string is the URL-encoded Go template, decoded in README.md.
+  # Decoded in README.md.
   - name: ntfy
     webhook_configs:
       - url: "{{ monitoring_service_ntfy_url }}?template=yes&title=%7B%7B.commonLabels.alertname%7D%7D%7B%7Bif%20eq%20.status%20%22resolved%22%7D%7D%20resolved%7B%7Bend%7D%7D&message=%7B%7B.commonAnnotations.summary%7D%7D%7B%7Bif%20.commonAnnotations.description%7D%7D%0A%7B%7B.commonAnnotations.description%7D%7D%7B%7Bend%7D%7D"
