@@ -1,7 +1,9 @@
 apiVersion: 1
 
 providers:
-  - name: home-server
+  # The name stays: Grafana ties imported dashboards to it, and a renamed
+  # provider leaves the old ones behind as undeletable orphans.
+  - name: node-exporter
     type: file
     options:
       path: /etc/grafana/provisioning/dashboards/home-server

@@ -156,7 +156,7 @@ P.append(panel("Uptime", "stat", PROM, [prom("node_time_seconds - node_boot_time
 P.append(panel("CPU", "stat", PROM, [prom('100 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100')], g, w=4, h=4, unit="percent", decimals=0, thresholds=[(None, "green"), (70, "orange"), (90, "red")]))
 P.append(panel("Load (5m)", "stat", PROM, [prom("node_load5")], g, w=4, h=4, decimals=1, thresholds=[(None, "green"), (4, "orange"), (8, "red")], desc="Four cores: above 4 the box queues work."))
 P.append(panel("Memory used", "stat", PROM, [prom("100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)")], g, w=4, h=4, unit="percent", decimals=0, thresholds=[(None, "green"), (80, "orange"), (90, "red")]))
-P.append(panel("Root disk used", "stat", PROM, [prom('100 * (1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})')], g, w=4, h=4, unit="percent", decimals=0, thresholds=[(None, "green"), (80, "orange"), (90, "red")]))
+P.append(panel("Root disk used", "stat", PROM, [prom('100 * (1 - node_filesystem_avail_bytes{mountpoint="/var"} / node_filesystem_size_bytes{mountpoint="/var"})')], g, w=4, h=4, unit="percent", decimals=0, thresholds=[(None, "green"), (80, "orange"), (90, "red")]))
 P.append(panel("Hottest sensor", "stat", PROM, [prom("max(node_hwmon_temp_celsius)")], g, w=4, h=4, unit="celsius", decimals=0, thresholds=[(None, "green"), (75, "orange"), (85, "red")]))
 
 P.append(panel("CPU by mode", "timeseries", PROM, [prom('sum by (mode) (rate(node_cpu_seconds_total{mode!="idle"}[$__rate_interval])) * 100 / scalar(count(node_cpu_seconds_total{mode="idle"}))', "{{mode}}")], g, w=12, unit="percent", stack=True, minimum=0, maximum=100))

@@ -66,8 +66,8 @@ Two sources, one delivery path. Prometheus rules cover the host. Loki rules
 read the journal Alloy already ships, so there is no podman exporter. Both go
 to Alertmanager, which delivers to ntfy in this pod. Alerts reach no third party.
 Set `monitoring_service_ntfy_url` to a hosted topic to change that, or empty
-to evaluate and discard. ntfy keeps no message history: a notification is
-pushed when it happens, and that is all an alert needs.
+to evaluate and discard. ntfy caches the topic in a volume (12 h by default),
+so a phone that was offline catches up and a reboot keeps the history.
 
 Two kinds share the topic. **States** fire, repeat every 12 h and send a
 resolved message. **Events** carry `severity: info`, are sent once and never
@@ -89,7 +89,7 @@ carry, and ntfy renders a missing `summary` as `<no value>`.
 
 | Alert | Source | Kind |
 |---|---|---|
-| `TargetDown`, `HostHighCpuLoad`, `HostLowDiskSpace`, `HostMemoryLow`, `HostHighTemperature` | Prometheus | state |
+| `TargetDown`, `HostHighCpuLoad`, `HostLowDiskSpace` (`/var`, where everything lives on ostree), `HostMemoryLow`, `HostHighTemperature` | Prometheus | state |
 | `ContainerRestartLoop` (>5 restarts in 15 min), `ContainerFailed` | Loki, by `user_unit` | state |
 | `ScheduledJobFailed` (backup, snapshot, dump; 6 h window) | Loki, by `unit` | state |
 | `OomKill`, `SelinuxDenials` (>20 enforced in 15 min, pasta excluded), `BunkerWebError`, `CertificateRenewalFailed` | Loki | state |

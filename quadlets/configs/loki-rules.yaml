@@ -6,10 +6,15 @@ groups:
       # Manager messages about a user unit only: a container that quotes these
       # strings in its own output (Loki does, for its rules) must not trip them,
       # and a failed system unit has no user_unit, which left the summary nameless.
+      # Podman's transient health-check units (<container id>-<hash>.service)
+      # fail on every probe that exits 1, which is normal while a container starts.
       - alert: ContainerRestartLoop
         expr: |
           sum by (user_unit) (
-            count_over_time({job="systemd-journal", syslog_identifier="systemd", user_unit=~".+"} |= "Scheduled restart job" [15m])
+            count_over_time(
+              {job="systemd-journal", syslog_identifier="systemd", user_unit=~".+", user_unit!~"[0-9a-f]{64}-.*"}
+                |= "Scheduled restart job" [15m]
+            )
           ) > 5
         for: 5m
         labels:
@@ -25,7 +30,10 @@ groups:
       - alert: ContainerFailed
         expr: |
           sum by (user_unit) (
-            count_over_time({job="systemd-journal", syslog_identifier="systemd", user_unit=~".+"} |= "Failed with result" [10m])
+            count_over_time(
+              {job="systemd-journal", syslog_identifier="systemd", user_unit=~".+", user_unit!~"[0-9a-f]{64}-.*"}
+                |= "Failed with result" [10m]
+            )
           ) > 0
         for: 10m
         labels:

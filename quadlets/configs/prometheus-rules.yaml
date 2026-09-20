@@ -19,7 +19,7 @@ groups:
           summary: "Host CPU load > 80% for 15m"
 
       - alert: HostLowDiskSpace
-        expr: (node_filesystem_avail_bytes{mountpoint="/"} * 100) / node_filesystem_size_bytes{mountpoint="/"} < 10
+        expr: (node_filesystem_avail_bytes{mountpoint="/var"} * 100) / node_filesystem_size_bytes{mountpoint="/var"} < 10
         for: 5m
         labels:
           severity: critical

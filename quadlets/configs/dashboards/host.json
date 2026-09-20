@@ -325,7 +325,7 @@
       },
       "targets": [
         {
-          "expr": "100 * (1 - node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"})",
+          "expr": "100 * (1 - node_filesystem_avail_bytes{mountpoint=\"/var\"} / node_filesystem_size_bytes{mountpoint=\"/var\"})",
           "legendFormat": "",
           "range": true,
           "refId": "A",

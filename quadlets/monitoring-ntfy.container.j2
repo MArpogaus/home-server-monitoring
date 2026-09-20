@@ -5,6 +5,11 @@ ContainerName=monitoring-ntfy
 Environment=NTFY_LISTEN_HTTP=:8081
 Environment=NTFY_BASE_URL={{ monitoring_service_ntfy_base_url }}
 Environment=NTFY_BEHIND_PROXY=true
+# Without a cache file the history dies with the process: a phone that was
+# offline never receives what was published meanwhile, and a reboot wipes
+# the topic.
+Environment=NTFY_CACHE_FILE=/var/cache/ntfy/cache.db
+Volume=ntfy-cache:/var/cache/ntfy:Z
 Exec=serve
 PodmanArgs={{ monitoring_service_ntfy_extra_args }}
 AutoUpdate={{ monitoring_service_auto_update }}
