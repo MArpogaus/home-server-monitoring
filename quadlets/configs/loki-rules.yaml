@@ -3,12 +3,13 @@ groups:
   - name: containers
     interval: 1m
     rules:
-      # Manager messages only: a container that quotes these strings in its own
-      # output (Loki does, for its rules) must not trip them.
+      # Manager messages about a user unit only: a container that quotes these
+      # strings in its own output (Loki does, for its rules) must not trip them,
+      # and a failed system unit has no user_unit, which left the summary nameless.
       - alert: ContainerRestartLoop
         expr: |
           sum by (user_unit) (
-            count_over_time({job="systemd-journal", syslog_identifier="systemd"} |= "Scheduled restart job" [15m])
+            count_over_time({job="systemd-journal", syslog_identifier="systemd", user_unit=~".+"} |= "Scheduled restart job" [15m])
           ) > 5
         for: 5m
         labels:
@@ -24,7 +25,7 @@ groups:
       - alert: ContainerFailed
         expr: |
           sum by (user_unit) (
-            count_over_time({job="systemd-journal", syslog_identifier="systemd"} |= "Failed with result" [10m])
+            count_over_time({job="systemd-journal", syslog_identifier="systemd", user_unit=~".+"} |= "Failed with result" [10m])
           ) > 0
         for: 10m
         labels:
