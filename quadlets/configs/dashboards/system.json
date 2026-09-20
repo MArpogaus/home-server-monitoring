@@ -709,7 +709,7 @@
       "id": 13
     },
     {
-      "title": "Bans and SELinux",
+      "title": "SELinux denials and OOM kills",
       "type": "logs",
       "datasource": {
         "type": "loki",
@@ -723,7 +723,7 @@
       },
       "targets": [
         {
-          "expr": "{syslog_identifier=~\"audit|kernel\"} |~ \"avc:  denied|Killed process\" != \"permissive=1\" or {container=\"bunker-nginx\"} |= \"is banned for\"",
+          "expr": "{syslog_identifier=~\"audit|kernel\"} |~ \"avc:  denied|Killed process\" != \"permissive=1\"",
           "legendFormat": "",
           "queryType": "range",
           "refId": "A",

@@ -449,7 +449,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (mode) (rate(node_cpu_seconds_total{mode!=\"idle\"}[$__rate_interval])) * 100 / count(node_cpu_seconds_total{mode=\"idle\"})",
+          "expr": "sum by (mode) (rate(node_cpu_seconds_total{mode!=\"idle\"}[$__rate_interval])) * 100 / scalar(count(node_cpu_seconds_total{mode=\"idle\"}))",
           "legendFormat": "{{mode}}",
           "range": true,
           "refId": "A",
@@ -809,7 +809,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (device) (rate(node_disk_read_bytes_total{device=~\"sd.|nvme.n.\"}[$__rate_interval]))",
+          "expr": "sum by (device) (rate(node_disk_read_bytes_total{device!~\"loop.*|dm-.*|sr.*|zram.*\"}[$__rate_interval]))",
           "legendFormat": "{{device}} read",
           "range": true,
           "refId": "A",
@@ -819,7 +819,7 @@
           }
         },
         {
-          "expr": "-sum by (device) (rate(node_disk_written_bytes_total{device=~\"sd.|nvme.n.\"}[$__rate_interval]))",
+          "expr": "-sum by (device) (rate(node_disk_written_bytes_total{device!~\"loop.*|dm-.*|sr.*|zram.*\"}[$__rate_interval]))",
           "legendFormat": "{{device}} write",
           "range": true,
           "refId": "B",
@@ -869,7 +869,7 @@
       },
       "targets": [
         {
-          "expr": "rate(node_disk_io_time_seconds_total{device=~\"sd.|nvme.n.\"}[$__rate_interval]) * 100",
+          "expr": "rate(node_disk_io_time_seconds_total{device!~\"loop.*|dm-.*|sr.*|zram.*\"}[$__rate_interval]) * 100",
           "legendFormat": "{{device}}",
           "range": true,
           "refId": "A",

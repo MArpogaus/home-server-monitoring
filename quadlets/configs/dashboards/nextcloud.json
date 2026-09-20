@@ -200,7 +200,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({user_unit=\"nextcloud-web.service\", syslog_identifier=\"nginx\"} | json | request_uri != \"/status.php\" | status =~ \"5..\" [1h]))",
+          "expr": "sum(count_over_time({user_unit=\"nextcloud-web.service\", syslog_identifier=\"nginx\"} | json | request_uri != \"/status.php\" | status =~ \"5..\" [1h])) or vector(0)",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -257,7 +257,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({syslog_identifier=\"nextcloud\"} |= \"Login failed: '\" [24h]))",
+          "expr": "sum(count_over_time({syslog_identifier=\"nextcloud\"} |= \"Login failed: '\" [24h])) or vector(0)",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -318,7 +318,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({syslog_identifier=\"nextcloud\"} | json | level >= 2 [24h]))",
+          "expr": "sum(count_over_time({syslog_identifier=\"nextcloud\"} | json | level >= 2 [24h])) or vector(0)",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -376,7 +376,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({syslog_identifier=\"php-fpm\"} |= \"reached pm.max_children\" [24h]))",
+          "expr": "sum(count_over_time({syslog_identifier=\"php-fpm\"} |= \"reached pm.max_children\" [24h])) or vector(0)",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",

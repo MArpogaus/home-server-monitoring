@@ -91,7 +91,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({container=\"bunker-nginx\"} | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | site != \"bwapi\" | site != \"\" [1h])) / 60",
+          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` [1h])) / 60",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -139,7 +139,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({container=\"bunker-nginx\"} | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | site != \"bwapi\" | site != \"\" | status =~ \"4..\" [1h]))",
+          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | status =~ \"4..\" [1h])) or vector(0)",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -196,7 +196,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({container=\"bunker-nginx\"} | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | site != \"bwapi\" | site != \"\" | status =~ \"5..\" [1h]))",
+          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | status =~ \"5..\" [1h])) or vector(0)",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -253,7 +253,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |= \"denied access\" [24h]))",
+          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |= \"denied access\" [24h])) or vector(0)",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -301,7 +301,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |= \"[BADBEHAVIOR]\" |= \"is banned for\" [24h]))",
+          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |= \"[BADBEHAVIOR]\" |= \"is banned for\" [24h])) or vector(0)",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -348,7 +348,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({container=\"bunker-scheduler\"} |~ \"(?i)certbot|certificate\" |~ \"(?i)error|fail\" [7d]))",
+          "expr": "sum(count_over_time({container=\"bunker-scheduler\"} |~ \"(?i)certbot|certificate\" |~ \"(?i)error|fail\" [7d])) or vector(0)",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -406,7 +406,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (site) (rate({container=\"bunker-nginx\"} | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | site != \"bwapi\" | site != \"\" [$__auto]))",
+          "expr": "sum by (site) (rate({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` [$__auto]))",
           "legendFormat": "{{site}}",
           "queryType": "range",
           "refId": "A",
@@ -459,7 +459,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (class) (rate({container=\"bunker-nginx\"} | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | site != \"bwapi\" | site != \"\" | label_format class=\"{{ .status | substr 0 1 }}xx\" [$__auto]))",
+          "expr": "sum by (class) (rate({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | label_format class=\"{{ .status | substr 0 1 }}xx\" [$__auto]))",
           "legendFormat": "{{class}}",
           "queryType": "range",
           "refId": "A",
@@ -685,7 +685,7 @@
       },
       "targets": [
         {
-          "expr": "topk(10, sum by (ip) (count_over_time({container=\"bunker-nginx\"} | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | site != \"bwapi\" | site != \"\" [$__range])))",
+          "expr": "topk(10, sum by (ip) (count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` [$__range])))",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -726,7 +726,7 @@
       },
       "targets": [
         {
-          "expr": "topk(10, sum by (uri) (count_over_time({container=\"bunker-nginx\"} | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | site != \"bwapi\" | site != \"\" [$__range])))",
+          "expr": "topk(10, sum by (uri) (count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` [$__range])))",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -767,7 +767,7 @@
       },
       "targets": [
         {
-          "expr": "topk(10, sum by (ua) (count_over_time({container=\"bunker-nginx\"} | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | site != \"bwapi\" | site != \"\" [$__range])))",
+          "expr": "topk(10, sum by (ua) (count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` [$__range])))",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",

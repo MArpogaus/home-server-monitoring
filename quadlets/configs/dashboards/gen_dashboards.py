@@ -16,8 +16,8 @@ NGINX = '{user_unit="nextcloud-web.service", syslog_identifier="nginx"} | json |
 # Nextcloud application log: one JSON object per line, syslog tag nextcloud
 NCLOG = '{syslog_identifier="nextcloud"} | json'
 # BunkerWeb access log: <site> <ip> - <reqid> - [time] "<method> <uri> <proto>" <status> <bytes> "<referer>" "<ua>"
-BW = ('{container="bunker-nginx"} | pattern `<site> <ip> - <_> - [<_>] "<method> <uri> <_>" <status> <bytes> "<_>" "<ua>"`'
-      ' | site != "bwapi" | site != ""')
+BW = ('{container="bunker-nginx"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != "bwapi"'
+      ' | pattern `<site> <ip> - <_> - [<_>] "<method> <uri> <_>" <status> <bytes> "<_>" "<ua>"`')
 
 
 class Grid:
@@ -159,7 +159,7 @@ P.append(panel("Memory used", "stat", PROM, [prom("100 * (1 - node_memory_MemAva
 P.append(panel("Root disk used", "stat", PROM, [prom('100 * (1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})')], g, w=4, h=4, unit="percent", decimals=0, thresholds=[(None, "green"), (80, "orange"), (90, "red")]))
 P.append(panel("Hottest sensor", "stat", PROM, [prom("max(node_hwmon_temp_celsius)")], g, w=4, h=4, unit="celsius", decimals=0, thresholds=[(None, "green"), (75, "orange"), (85, "red")]))
 
-P.append(panel("CPU by mode", "timeseries", PROM, [prom('sum by (mode) (rate(node_cpu_seconds_total{mode!="idle"}[$__rate_interval])) * 100 / count(node_cpu_seconds_total{mode="idle"})', "{{mode}}")], g, w=12, unit="percent", stack=True, minimum=0, maximum=100))
+P.append(panel("CPU by mode", "timeseries", PROM, [prom('sum by (mode) (rate(node_cpu_seconds_total{mode!="idle"}[$__rate_interval])) * 100 / scalar(count(node_cpu_seconds_total{mode="idle"}))', "{{mode}}")], g, w=12, unit="percent", stack=True, minimum=0, maximum=100))
 P.append(panel("Load average", "timeseries", PROM, [prom("node_load1", "1m"), prom("node_load5", "5m"), prom("node_load15", "15m")], g, w=12, decimals=1, thresholds=[(None, "transparent"), (4, "orange")]))
 P.append(panel("Memory", "timeseries", PROM, [
     prom("node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes", "used"),
@@ -173,9 +173,9 @@ P.append(panel("Pressure stall", "timeseries", PROM, [
     desc="Share of time tasks waited for the resource. Sustained IO pressure on a thin client means the SSD, not the CPU, is the bottleneck."))
 P.append(panel("Disk space used", "timeseries", PROM, [prom('100 * (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"})', "{{mountpoint}}")], g, w=12, unit="percent", minimum=0, maximum=100, thresholds=[(None, "transparent"), (90, "red")]))
 P.append(panel("Disk throughput", "timeseries", PROM, [
-    prom('sum by (device) (rate(node_disk_read_bytes_total{device=~"sd.|nvme.n."}[$__rate_interval]))', "{{device}} read"),
-    prom('-sum by (device) (rate(node_disk_written_bytes_total{device=~"sd.|nvme.n."}[$__rate_interval]))', "{{device}} write")], g, w=12, unit="Bps"))
-P.append(panel("Disk busy", "timeseries", PROM, [prom('rate(node_disk_io_time_seconds_total{device=~"sd.|nvme.n."}[$__rate_interval]) * 100', "{{device}}")], g, w=12, unit="percent", minimum=0, maximum=100))
+    prom('sum by (device) (rate(node_disk_read_bytes_total{device!~"loop.*|dm-.*|sr.*|zram.*"}[$__rate_interval]))', "{{device}} read"),
+    prom('-sum by (device) (rate(node_disk_written_bytes_total{device!~"loop.*|dm-.*|sr.*|zram.*"}[$__rate_interval]))', "{{device}} write")], g, w=12, unit="Bps"))
+P.append(panel("Disk busy", "timeseries", PROM, [prom('rate(node_disk_io_time_seconds_total{device!~"loop.*|dm-.*|sr.*|zram.*"}[$__rate_interval]) * 100', "{{device}}")], g, w=12, unit="percent", minimum=0, maximum=100))
 P.append(panel("Network", "timeseries", PROM, [
     prom('sum by (device) (rate(node_network_receive_bytes_total{device!~"lo|veth.*|podman.*|pasta.*"}[$__rate_interval]) * 8)', "{{device}} in"),
     prom('-sum by (device) (rate(node_network_transmit_bytes_total{device!~"lo|veth.*|podman.*|pasta.*"}[$__rate_interval]) * 8)', "{{device}} out")], g, w=12, unit="bps"))
@@ -187,11 +187,11 @@ host = dashboard("host", "Host", ["home-server"], P, links=LINKS)
 g = Grid()
 P = []
 P.append(panel("Requests / min", "stat", LOKI, [loki_instant(f"sum(count_over_time({BW} [1h])) / 60")], g, w=4, h=4, decimals=1, color="fixed", desc="Last hour, without BunkerWeb's own health checks."))
-P.append(panel("4xx (1h)", "stat", LOKI, [loki_instant(f'sum(count_over_time({BW} | status =~ "4.." [1h]))')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (50, "orange")]))
-P.append(panel("5xx (1h)", "stat", LOKI, [loki_instant(f'sum(count_over_time({BW} | status =~ "5.." [1h]))')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "red")]))
-P.append(panel("Denied (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({container="bunker-nginx"} |= "denied access" [24h]))')], g, w=4, h=4, decimals=0, color="fixed", desc="Requests BunkerWeb refused: geo allowlist, method, ModSecurity, rate limit."))
-P.append(panel("Bans (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({container="bunker-nginx"} |= "[BADBEHAVIOR]" |= "is banned for" [24h]))')], g, w=4, h=4, decimals=0, color="fixed"))
-P.append(panel("Certificate lines (7d)", "stat", LOKI, [loki_instant('sum(count_over_time({container="bunker-scheduler"} |~ "(?i)certbot|certificate" |~ "(?i)error|fail" [7d]))')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "red")], desc="Certificate errors from the scheduler in the last week. Zero is right."))
+P.append(panel("4xx (1h)", "stat", LOKI, [loki_instant(f'sum(count_over_time({BW} | status =~ "4.." [1h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (50, "orange")]))
+P.append(panel("5xx (1h)", "stat", LOKI, [loki_instant(f'sum(count_over_time({BW} | status =~ "5.." [1h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "red")]))
+P.append(panel("Denied (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({container="bunker-nginx"} |= "denied access" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, color="fixed", desc="Requests BunkerWeb refused: geo allowlist, method, ModSecurity, rate limit."))
+P.append(panel("Bans (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({container="bunker-nginx"} |= "[BADBEHAVIOR]" |= "is banned for" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, color="fixed"))
+P.append(panel("Certificate lines (7d)", "stat", LOKI, [loki_instant('sum(count_over_time({container="bunker-scheduler"} |~ "(?i)certbot|certificate" |~ "(?i)error|fail" [7d])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "red")], desc="Certificate errors from the scheduler in the last week. Zero is right."))
 
 P.append(panel("Requests by site", "timeseries", LOKI, [loki(f"sum by (site) (rate({BW} [$__auto]))", "{{site}}")], g, w=12, unit="reqps", stack=True))
 P.append(panel("Responses by class", "timeseries", LOKI, [loki(f'sum by (class) (rate({BW} | label_format class="{{{{ .status | substr 0 1 }}}}xx" [$__auto]))', "{{class}}")], g, w=12, unit="reqps", stack=True,
@@ -215,10 +215,10 @@ g = Grid()
 P = []
 P.append(panel("Requests / min", "stat", LOKI, [loki_instant(f"sum(count_over_time({NGINX} [1h])) / 60")], g, w=4, h=4, decimals=1, color="fixed"))
 P.append(panel("p95 response time", "stat", LOKI, [loki_instant(f"quantile_over_time(0.95, {NGINX} | unwrap request_time [1h])")], g, w=4, h=4, unit="s", decimals=2, thresholds=[(None, "green"), (2, "orange"), (5, "red")]))
-P.append(panel("5xx (1h)", "stat", LOKI, [loki_instant(f'sum(count_over_time({NGINX} | status =~ "5.." [1h]))')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "red")]))
-P.append(panel("Failed logins (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="nextcloud"} |= "Login failed: \'" [24h]))')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (5, "orange"), (20, "red")]))
-P.append(panel("App warnings+ (24h)", "stat", LOKI, [loki_instant(f"sum(count_over_time({NCLOG} | level >= 2 [24h]))")], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (50, "orange")], desc="Nextcloud log level 2 warning, 3 error, 4 fatal."))
-P.append(panel("php-fpm at max children (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="php-fpm"} |= "reached pm.max_children" [24h]))')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "orange")], desc="Every hit means requests queued. Raise nextcloud_service_php_max_children if this is not zero at quiet times."))
+P.append(panel("5xx (1h)", "stat", LOKI, [loki_instant(f'sum(count_over_time({NGINX} | status =~ "5.." [1h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "red")]))
+P.append(panel("Failed logins (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="nextcloud"} |= "Login failed: \'" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (5, "orange"), (20, "red")]))
+P.append(panel("App warnings+ (24h)", "stat", LOKI, [loki_instant(f"sum(count_over_time({NCLOG} | level >= 2 [24h])) or vector(0)")], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (50, "orange")], desc="Nextcloud log level 2 warning, 3 error, 4 fatal."))
+P.append(panel("php-fpm at max children (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="php-fpm"} |= "reached pm.max_children" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "orange")], desc="Every hit means requests queued. Raise nextcloud_service_php_max_children if this is not zero at quiet times."))
 
 P.append(panel("Requests by class", "timeseries", LOKI, [loki(f'sum by (class) (rate({NGINX} | label_format class="{{{{ .status | substr 0 1 }}}}xx" [$__auto]))', "{{class}}")], g, w=12, unit="reqps", stack=True,
     overrides=[{"matcher": {"id": "byName", "options": n}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": c}}]} for n, c in [("2xx", "green"), ("3xx", "blue"), ("4xx", "orange"), ("5xx", "red")]]))
@@ -262,7 +262,7 @@ P.append(panel("Updates, reboots, boots", "logs", LOKI, [loki('{unit=~"rpm-ostre
     desc="rpm-ostree stages an update; auto-reboot-staged.timer reboots at night when one is staged."))
 P.append(panel("Scheduled jobs", "logs", LOKI, [loki('{unit=~"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service|unstick-jobs.service|podman-auto-update.service"} |~ "Deactivated successfully|Failed with result|run complete|Starting|error|Error"')], g, w=12, h=9,
     desc="Backups, snapshots, the database dump, job unsticking and image updates."))
-P.append(panel("Bans and SELinux", "logs", LOKI, [loki('{syslog_identifier=~"audit|kernel"} |~ "avc:  denied|Killed process" != "permissive=1" or {container="bunker-nginx"} |= "is banned for"')], g, w=12, h=9))
+P.append(panel("SELinux denials and OOM kills", "logs", LOKI, [loki('{syslog_identifier=~"audit|kernel"} |~ "avc:  denied|Killed process" != "permissive=1"')], g, w=12, h=9))
 system = dashboard("system", "System log", ["home-server"], P, links=LINKS)
 
 for d in (host, proxy, nextcloud, system):
