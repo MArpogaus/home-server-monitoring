@@ -55,6 +55,18 @@ Two kinds share the topic. **States** fire, repeat every 12 h and send a
 resolved message. **Events** carry `severity: info`, are sent once and never
 resolve (route `ntfy-events`, `send_resolved: false`).
 
+ntfy renders each notification from the Alertmanager payload (`template=yes`
+in the webhook URL, the template URL-encoded in `alertmanager.yaml.j2`):
+
+```
+title:   {{.commonLabels.alertname}}{{if eq .status "resolved"}} resolved{{end}}
+message: {{.commonAnnotations.summary}}
+         {{.commonAnnotations.description}}     (when the rule has one)
+```
+
+So a rule's `summary` is the whole message on the phone; keep it one line and
+put the labels that matter into it.
+
 | Alert | Source | Kind |
 |---|---|---|
 | `TargetDown`, `HostHighCpuLoad`, `HostLowDiskSpace`, `HostMemoryLow`, `HostHighTemperature` | Prometheus | state |

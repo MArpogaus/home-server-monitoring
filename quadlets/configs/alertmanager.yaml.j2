@@ -17,14 +17,14 @@ route:
 receivers:
   - name: none
 {% if monitoring_service_ntfy_url %}
+  # ntfy renders title and message from the Alertmanager payload (template=yes);
+  # the query string is the URL-encoded Go template, decoded in README.md.
   - name: ntfy
     webhook_configs:
-      # ntfy >= 2.14 renders Alertmanager payloads with this predefined template;
-      # older ntfy still delivers the raw JSON.
-      - url: "{{ monitoring_service_ntfy_url }}?template=alertmanager"
+      - url: "{{ monitoring_service_ntfy_url }}?template=yes&title=%7B%7B.commonLabels.alertname%7D%7D%7B%7Bif%20eq%20.status%20%22resolved%22%7D%7D%20resolved%7B%7Bend%7D%7D&message=%7B%7B.commonAnnotations.summary%7D%7D%7B%7Bif%20.commonAnnotations.description%7D%7D%0A%7B%7B.commonAnnotations.description%7D%7D%7B%7Bend%7D%7D"
         send_resolved: true
   - name: ntfy-events
     webhook_configs:
-      - url: "{{ monitoring_service_ntfy_url }}?template=alertmanager"
+      - url: "{{ monitoring_service_ntfy_url }}?template=yes&title=%7B%7B.commonLabels.alertname%7D%7D%7B%7Bif%20eq%20.status%20%22resolved%22%7D%7D%20resolved%7B%7Bend%7D%7D&message=%7B%7B.commonAnnotations.summary%7D%7D%7B%7Bif%20.commonAnnotations.description%7D%7D%0A%7B%7B.commonAnnotations.description%7D%7D%7B%7Bend%7D%7D"
         send_resolved: false
 {% endif %}
