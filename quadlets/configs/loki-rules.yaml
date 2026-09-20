@@ -113,3 +113,76 @@ groups:
         annotations:
           summary: "BunkerWeb logged a critical error"
           description: "Check `journalctl _UID=1001 -p err` on the host; DNS timeouts and denied clients are not counted here."
+
+      - alert: SshLoginFailed
+        expr: |
+          sum(count_over_time({job="systemd-journal", unit="sshd.service"}
+                |~ "Invalid user|Failed (publickey|password)" [2m])) > 0
+        labels:
+          severity: info
+        annotations:
+          summary: "SSH login attempt failed"
+
+      - alert: NextcloudLoginFailed
+        expr: |
+          sum by (user, ip) (
+            count_over_time(
+              {job="systemd-journal", syslog_identifier="php-fpm"}
+                |= "Login failed"
+                | pattern "<_>Login failed: <user> (Remote IP: <ip>)<_>" [2m]
+            )
+          ) > 0
+        labels:
+          severity: info
+        annotations:
+          summary: "Nextcloud login failed for {{ $labels.user }} from {{ $labels.ip }}"
+
+      - alert: BackupDone
+        expr: |
+          sum by (unit) (count_over_time({job="systemd-journal", unit=~"btrfs-backup@.*"}
+                |= "Deactivated successfully" [2m])) > 0
+        labels:
+          severity: info
+        annotations:
+          summary: "{{ $labels.unit }} finished"
+
+      - alert: ImageUpdated
+        expr: |
+          sum by (user_unit) (count_over_time({job="systemd-journal"} |= "Trying to pull" [2m])) > 0
+        labels:
+          severity: info
+        annotations:
+          summary: "podman auto-update pulled a new image for {{ $labels.user_unit }}"
+
+  - name: host
+    interval: 1m
+    rules:
+      - alert: OomKill
+        expr: |
+          sum(count_over_time({job="systemd-journal", syslog_identifier="kernel"} |= "Killed process" [5m])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "The kernel killed a process for memory"
+          description: "Check `journalctl -k | grep -B3 'Killed process'` for the container and the process."
+
+      - alert: SelinuxDenials
+        expr: |
+          sum(count_over_time({job="systemd-journal", syslog_identifier="audit"}
+                |= "avc:  denied" != "permissive=1" != "comm=\"pasta" [15m])) > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than 20 enforced SELinux denials in 15 minutes"
+          description: "`ausearch -m AVC -ts recent` on the host. pasta's capability probes at pod start are excluded."
+
+      - alert: CertificateRenewalFailed
+        expr: |
+          sum(count_over_time({job="systemd-journal", container="bunker-scheduler"}
+                |~ "(?i)certbot" |~ "(?i)error|fail" [30m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "BunkerWeb could not renew a Let's Encrypt certificate"

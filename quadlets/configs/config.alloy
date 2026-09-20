@@ -20,6 +20,18 @@ loki.relabel "journal" {
     source_labels = ["__journal__systemd_user_unit"]
     target_label  = "user_unit"
   }
+  // A manager's message about a unit names it in UNIT / USER_UNIT, not in
+  // _SYSTEMD_UNIT (that is the manager itself); prefer the subject.
+  rule {
+    source_labels = ["__journal_unit"]
+    regex         = "(.+)"
+    target_label  = "unit"
+  }
+  rule {
+    source_labels = ["__journal_user_unit"]
+    regex         = "(.+)"
+    target_label  = "user_unit"
+  }
   rule {
     source_labels = ["__journal__transport"]
     target_label  = "transport"
