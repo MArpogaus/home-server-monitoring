@@ -11,9 +11,9 @@
     url: "{{ item }}"
     status_code: 200
   loop:
-    - http://127.0.0.1:3100/ready
-    - http://127.0.0.1:3000/api/health
-    - http://127.0.0.1:9090/-/ready
+    - http://127.0.0.2:3100/ready
+    - http://127.0.0.2:3000/api/health
+    - http://127.0.0.2:9090/-/ready
   register: monitoring_service_ready
   until: monitoring_service_ready is success
   retries: 30
@@ -22,7 +22,7 @@
 # GF_SECURITY_ADMIN_PASSWORD applies to a fresh database only.
 - name: Try the Grafana admin password
   ansible.builtin.uri:
-    url: http://127.0.0.1:3000/api/org
+    url: http://127.0.0.2:3000/api/org
     user: admin
     password: "{{ monitoring_service_grafana_admin_password }}"
     force_basic_auth: true

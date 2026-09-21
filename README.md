@@ -31,8 +31,11 @@ container.
 | monitoring-node-exporter | prom/node-exporter:v1.12.1 | Host metrics incl. hwmon |
 | monitoring-ntfy | binwiederhier/ntfy:v2.28.0 | Push notifications |
 
-All ports are published on `127.0.0.1` only. Reach Grafana with
-`ssh -L 3000:localhost:3000 core@host`.
+Grafana, Loki and Prometheus are published on the host's `127.0.0.2`, ntfy on
+`127.0.0.1`. pasta maps only `127.0.0.1` into the proxy pod, so the proxy can
+reach ntfy and nothing else of this stack. Reach Grafana with
+`ssh -L 3000:127.0.0.2:3000 core@host`, user `admin`, password
+`monitoring_service_grafana_admin_password`.
 
 ## Dashboards
 
@@ -129,9 +132,9 @@ was posted, twelve hours back.
 Confirm the rules loaded and the route exists:
 
 ```bash
-curl -s http://127.0.0.1:3100/loki/api/v1/rules | grep -c 'alert:'      # 15
-curl -s http://127.0.0.1:9090/api/v1/rules | head
-curl -s -G http://127.0.0.1:3100/loki/api/v1/label/job/values          # systemd-journal
+curl -s http://127.0.0.2:3100/loki/api/v1/rules | grep -c 'alert:'      # 18
+curl -s http://127.0.0.2:9090/api/v1/rules | head
+curl -s -G http://127.0.0.2:3100/loki/api/v1/label/job/values          # systemd-journal
 podman exec monitoring-alertmanager amtool --alertmanager.url=http://127.0.0.1:9093 alert query
 ```
 
