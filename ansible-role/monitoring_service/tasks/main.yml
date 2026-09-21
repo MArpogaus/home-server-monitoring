@@ -1,4 +1,14 @@
 ---
+- name: Assert the ntfy credentials are set
+  ansible.builtin.assert:
+    that:
+      - monitoring_service_ntfy_password | length > 0
+      - monitoring_service_ntfy_token is match('^tk_[a-z0-9]{29}$')
+    fail_msg: >-
+      Set monitoring_service_ntfy_password and monitoring_service_ntfy_token
+      (tk_ plus 29 lowercase letters or digits) in secrets/vars.yml; without
+      them nobody can publish or read alerts.
+    quiet: true
 
 - name: Deploy the Quadlets
   ansible.builtin.import_role:

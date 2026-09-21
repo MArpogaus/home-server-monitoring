@@ -140,14 +140,24 @@ heartbeat to something off the box would cover that; it is not done.
 ntfy listens on the pod loopback and is published on the host's `127.0.0.1:8081`.
 The phone reaches it in one of two ways: an SSH tunnel
 (`ssh -L 8081:localhost:8081 core@host`) or BunkerWeb, which serves ntfy on a
-name of its own with TLS and basic auth (`bunker_service_ntfy_server_name` in
+name of its own with TLS (`bunker_service_ntfy_server_name` in
 `service-bunker`). Set `monitoring_service_ntfy_base_url` to that address so
-links in a notification point at it. Subscribe to the topic `alerts`.
+links in a notification point at it. Subscribe to the topic `alerts` with
+`monitoring_service_ntfy_user` and its password.
 
-The topic is also a channel: `curl -d "text" http://127.0.0.1:8081/alerts` on
-the host posts a message, and
-`curl 'http://127.0.0.1:8081/alerts/json?poll=1&since=<epoch>'` reads what
-was posted, twelve hours back.
+Authentication is ntfy's own (`NTFY_AUTH_*`, default `deny-all`): one user
+for the phone, one token for Alertmanager, both declared in the container
+unit and synced into `user.db` at every start. The proxy used to enforce
+basic auth instead; ntfy then needed no database, but every client shared
+one password, a machine token was impossible, and BunkerWeb counted the
+phone's own `401` round trips as bad behaviour. Anything on the host that
+posts to the topic sends the token too.
+
+The topic is also a channel:
+`curl -H "Authorization: Bearer $token" -d "text" http://127.0.0.1:8081/alerts`
+on the host posts a message, and
+`curl -H "Authorization: Bearer $token" 'http://127.0.0.1:8081/alerts/json?poll=1&since=<epoch>'`
+reads what was posted, 72 hours back.
 
 ### When alerts do not arrive
 
@@ -179,7 +189,9 @@ podman exec monitoring-alertmanager amtool --alertmanager.url=http://127.0.0.1:9
 | `monitoring_service_auto_update` | `registry` | Podman auto-update |
 | `monitoring_service_grafana_max_conns` | `2` | Grafana datasource proxy conns |
 | `monitoring_service_grafana_admin_password` | `""` | Set it: the proxy pod can reach Grafana, and empty leaves `admin/admin` |
-| `monitoring_service_probe_urls` | `[]` | Public URLs the blackbox exporter probes every minute; 2xx or 401 (basic auth) passes |
+| `monitoring_service_probe_urls` | `[]` | Public URLs the blackbox exporter probes every minute; 2xx passes |
+| `monitoring_service_ntfy_user` / `_password` | `ntfy` / required | The phone's login |
+| `monitoring_service_ntfy_token` | required | Alertmanager's and deploy.sh's bearer token (`tk_` + 29 lowercase alphanumerics) |
 
 ## Role contract
 

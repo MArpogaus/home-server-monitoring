@@ -5,5 +5,3 @@ modules:
     http:
       preferred_ip_protocol: ip4
       fail_if_not_ssl: true
-      # 401 is the healthy answer of a site behind BunkerWeb basic auth (ntfy).
-      valid_status_codes: [200, 401]

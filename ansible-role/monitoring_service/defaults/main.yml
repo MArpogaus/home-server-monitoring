@@ -28,5 +28,10 @@ monitoring_service_grafana_admin_password: ""
 
 monitoring_service_ntfy_url: "http://127.0.0.1:8081/alerts"
 monitoring_service_ntfy_base_url: "http://127.0.0.1:8081"
+# Auth lives in ntfy: the phone logs in with user and password, Alertmanager
+# and deploy.sh publish with the token (tk_ + 29 lowercase alphanumerics).
+monitoring_service_ntfy_user: "ntfy"
+monitoring_service_ntfy_password: ""
+monitoring_service_ntfy_token: ""
 monitoring_service_ntfy_image: "docker.io/binwiederhier/ntfy:v2.28.0"
 monitoring_service_ntfy_extra_args: "--memory=128M"

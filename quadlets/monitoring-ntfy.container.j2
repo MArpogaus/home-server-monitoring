@@ -11,6 +11,14 @@ Environment=NTFY_BEHIND_PROXY=true
 Environment=NTFY_CACHE_FILE=/var/cache/ntfy/cache.db
 Environment=NTFY_CACHE_DURATION=72h
 Volume=ntfy-cache:/var/cache/ntfy:Z
+# Users, ACL and tokens are declared here and synced into user.db at start.
+# The bcrypt salt derives from the password so the unit is stable across runs.
+Environment=NTFY_AUTH_FILE=/var/lib/ntfy/user.db
+Environment=NTFY_AUTH_DEFAULT_ACCESS=deny-all
+Environment=NTFY_AUTH_USERS={{ monitoring_service_ntfy_user }}:{{ monitoring_service_ntfy_password | password_hash('bcrypt', salt=(monitoring_service_ntfy_password | hash('sha256'))[:22], ident='2b') }}:user
+Environment=NTFY_AUTH_ACCESS={{ monitoring_service_ntfy_user }}:alerts:rw
+Environment=NTFY_AUTH_TOKENS={{ monitoring_service_ntfy_user }}:{{ monitoring_service_ntfy_token }}:alertmanager
+Volume=ntfy-data:/var/lib/ntfy:Z
 Exec=serve
 PodmanArgs={{ monitoring_service_ntfy_extra_args }}
 AutoUpdate={{ monitoring_service_auto_update }}
