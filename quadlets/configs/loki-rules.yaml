@@ -116,12 +116,19 @@ groups:
 
       - alert: UpdateStaged
         expr: |
-          sum(count_over_time({job="systemd-journal", unit=~"rpm-ostreed.service|auto-reboot-staged.service"}
-                |~ "[Ss]taged|Rebooting" [2m])) > 0
+          sum(count_over_time({job="systemd-journal", unit="rpm-ostreed.service"} |= "Staging deployment...done" [2m])) > 0
         labels:
           severity: info
         annotations:
-          summary: "rpm-ostree staged an update or the auto-reboot fired"
+          summary: "rpm-ostree staged an update; the host reboots after the next backup"
+
+      - alert: AutoReboot
+        expr: |
+          sum(count_over_time({job="systemd-journal", unit="auto-reboot-staged.service"} |= "Rebooting in" [2m])) > 0
+        labels:
+          severity: info
+        annotations:
+          summary: "Rebooting in 60 s into the staged update"
 
       - alert: BunkerWebBan
         expr: |

@@ -96,7 +96,7 @@ carry, and ntfy renders a missing `summary` as `<no value>`.
 | `ContainerRestartLoop` (>5 restarts in 15 min), `ContainerFailed` | Loki, by `user_unit` | state |
 | `ScheduledJobFailed` (backup, snapshot, dump; 6 h window), `BackupMissing`, `SnapshotMissing`, `DumpMissing` (nothing finished in 30 h) | Loki, by `unit` | state |
 | `OomKill`, `SelinuxDenials` (>20 enforced in 15 min, pasta excluded), `BunkerWebError`, `CertificateRenewalFailed` | Loki | state |
-| `SshLogin` (user, IP), `SshLoginFailed`, `NextcloudLoginFailed` (user, IP), `HostBooted`, `UpdateStaged`, `BunkerWebBan` (IP), `BackupDone`, `ImagePulled` (image) | Loki | event |
+| `SshLogin` (user, IP), `SshLoginFailed`, `NextcloudLoginFailed` (user, IP), `HostBooted`, `UpdateStaged`, `AutoReboot`, `BunkerWebBan` (IP), `BackupDone`, `ImagePulled` (image) | Loki | event |
 
 A container restart loop is the single highest-value alert here: it is how
 every container-level bug in this project first showed itself. A deploy that
