@@ -50,7 +50,24 @@ generator.
 | Host | Prometheus | CPU, load, memory, pressure stall, disks, network, temperatures |
 | Proxy | Loki | BunkerWeb access log by site and status, denials, ModSecurity rule hits, bans, certificate events |
 | Nextcloud | Loki | nginx access log (latency, status, clients, paths), the Nextcloud log by level, failed logins, background containers, database |
-| System log | Loki, Alertmanager | Active alerts, unit failures, container state changes, restarts, SSH logins, updates and boots, scheduled jobs, SELinux and OOM |
+| System log | Loki, Prometheus | Active alert count, firing Prometheus alerts, unit failures, container state changes, restarts, SSH logins, updates and boots, scheduled jobs, SELinux and OOM, image pulls |
+
+Every dashboard has the same rows: **Now** (stat tiles and gauges for the
+last hour or day), **Trends** (time series, table legends with mean, max and
+last), **Details** (top-10 tables over the dashboard range) and **Logs**.
+Every panel carries a description (the `i` icon) that says what the numbers
+mean and which alert belongs to them. Counts per interval are bars, rates
+are stacked areas, and gaps stay gaps: `spanNulls` is off because it drew
+straight ramps across hours without log lines.
+
+Two Loki traps the generator handles: `| json` turns every field into a
+label, so an unwrap aggregation without `by (job)` returns one series per
+log line; and label-less series from several queries all take the first
+query's legend, so a static legend becomes a `series` label via
+`label_replace`. Loki alerts have no queryable state for a table: the
+ruler's `remote_write` into Prometheus stalled every evaluation
+(`appender not ready`) and was reverted, so only Prometheus alerts are
+listed and Loki's show up as events in the log panels.
 
 The Loki panels parse the nginx JSON access log and BunkerWeb's access line
 with `pattern`; a change to either format is a change to the generator. The
@@ -94,6 +111,7 @@ carry, and ntfy renders a missing `summary` as `<no value>`.
 | Alert | Source | Kind |
 |---|---|---|
 | `TargetDown`, `HostHighCpuLoad`, `HostLowDiskSpace` (`/var`, where everything lives on ostree), `HostMemoryLow`, `HostHighTemperature` | Prometheus | state |
+| `PublicUrlDown` (a probed URL fails: DNS, TLS, WAF or backend), `CertificateExpiresSoon` (< 14 days) | Prometheus, blackbox exporter | state |
 | `ContainerRestartLoop` (>5 restarts in 15 min), `ContainerFailed` | Loki, by `user_unit` | state |
 | `ScheduledJobFailed` (backup, snapshot, dump; 6 h window), `BackupMissing`, `SnapshotMissing`, `DumpMissing` (nothing finished in 30 h) | Loki, by `unit` | state |
 | `OomKill`, `SelinuxDenials` (>20 enforced in 15 min, pasta excluded), `BunkerWebError`, `CertificateRenewalFailed` | Loki | state |
@@ -109,6 +127,10 @@ The Loki rules select on `job="systemd-journal"` and on `unit` / `user_unit`.
 `syslog_identifier="systemd"`: Loki's ruler quotes every rule's match string
 in its own log, and at log level info those lines tripped the rules they came
 from (`loki.yaml` runs it at `warn` for the same reason).
+
+The blackbox exporter probes `monitoring_service_probe_urls` from the host
+through the public path (hairpin NAT), so a broken DNS record, an expired
+certificate or a WAF that bans everyone shows up before a user reports it.
 
 A notifier on this machine cannot report that this machine is down. A
 heartbeat to something off the box would cover that; it is not done.
@@ -157,6 +179,7 @@ podman exec monitoring-alertmanager amtool --alertmanager.url=http://127.0.0.1:9
 | `monitoring_service_auto_update` | `registry` | Podman auto-update |
 | `monitoring_service_grafana_max_conns` | `2` | Grafana datasource proxy conns |
 | `monitoring_service_grafana_admin_password` | `""` | Set it: the proxy pod can reach Grafana, and empty leaves `admin/admin` |
+| `monitoring_service_probe_urls` | `[]` | Public URLs the blackbox exporter probes every minute; 2xx or 401 (basic auth) passes |
 
 ## Role contract
 
@@ -169,6 +192,15 @@ files are copied, and the pod restarts only when one of them changed.
 ## Development
 
 Work on `dev`. Conventional commits. Hook setup: `ansible-base/README.md`.
+
+Dashboards are checked visually before a commit: `grafana-image-renderer`
+joined to the monitoring pod on the test VM (`SERVER_ADDR=:8082`, a shared
+`AUTH_TOKEN`, Grafana gets `GF_RENDERING_SERVER_URL`, `_CALLBACK_URL` and
+`_RENDERER_TOKEN` through a `monitoring-grafana.container.d` drop-in), then
+`GET /render/d/<uid>/<uid>?kiosk&width=1600&height=-1` per dashboard. Copying
+`quadlets/configs/dashboards/` into the VM's configs directory reloads them
+within ten seconds, so an iteration costs under a minute. The next deploy
+removes the drop-in again.
 
 ## License
 

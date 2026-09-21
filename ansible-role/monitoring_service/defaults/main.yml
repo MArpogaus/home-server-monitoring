@@ -8,14 +8,19 @@ monitoring_service_alloy_image: "docker.io/grafana/alloy:v1.19.2"
 monitoring_service_prometheus_image: "docker.io/prom/prometheus:v3.14.0"
 monitoring_service_alertmanager_image: "docker.io/prom/alertmanager:v0.34.1"
 monitoring_service_node_exporter_image: "docker.io/prom/node-exporter:v1.12.1"
+monitoring_service_blackbox_image: "docker.io/prom/blackbox-exporter:v0.28.0"
 
 # Resource ceilings for an 8 GB host
-monitoring_service_grafana_extra_args: "--memory=384M --pids-limit=512 --security-opt=no-new-privileges --cap-drop=ALL"
-monitoring_service_loki_extra_args: "--memory=512M --pids-limit=512 --security-opt=no-new-privileges --cap-drop=ALL"
-monitoring_service_alloy_extra_args: "--memory=256M --pids-limit=512 --security-opt=no-new-privileges"
-monitoring_service_prometheus_extra_args: "--memory=512M --pids-limit=512 --security-opt=no-new-privileges --cap-drop=ALL"
-monitoring_service_alertmanager_extra_args: "--memory=128M --pids-limit=512 --security-opt=no-new-privileges --cap-drop=ALL"
-monitoring_service_node_exporter_extra_args: "--memory=64M --pids-limit=512 --security-opt=no-new-privileges"
+monitoring_service_grafana_extra_args: "--memory=384M"
+monitoring_service_loki_extra_args: "--memory=512M"
+monitoring_service_alloy_extra_args: "--memory=256M"
+monitoring_service_prometheus_extra_args: "--memory=512M"
+monitoring_service_alertmanager_extra_args: "--memory=128M"
+monitoring_service_node_exporter_extra_args: "--memory=64M"
+monitoring_service_blackbox_extra_args: "--memory=64M"
+
+# Public URLs probed from the host every minute (DNS, TLS, WAF, backend).
+monitoring_service_probe_urls: []
 
 monitoring_service_grafana_max_conns: "2"
 # Empty leaves Grafana at admin/admin, which the proxy pod can reach.
@@ -24,4 +29,4 @@ monitoring_service_grafana_admin_password: ""
 monitoring_service_ntfy_url: "http://127.0.0.1:8081/alerts"
 monitoring_service_ntfy_base_url: "http://127.0.0.1:8081"
 monitoring_service_ntfy_image: "docker.io/binwiederhier/ntfy:v2.28.0"
-monitoring_service_ntfy_extra_args: "--memory=128M --pids-limit=512 --security-opt=no-new-privileges"
+monitoring_service_ntfy_extra_args: "--memory=128M"

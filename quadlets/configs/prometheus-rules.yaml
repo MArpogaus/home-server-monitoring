@@ -41,3 +41,22 @@ groups:
           severity: warning
         annotations:
           summary: "Sensor {{ $labels.chip }} above 85°C (thin client throttling)"
+
+  - name: public
+    interval: 60s
+    rules:
+      - alert: PublicUrlDown
+        expr: probe_success == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.instance }} fails the probe (DNS, TLS, WAF or backend)"
+
+      - alert: CertificateExpiresSoon
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 14
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "TLS certificate of {{ $labels.instance }} expires in {{ $value | printf \"%.0f\" }} days"

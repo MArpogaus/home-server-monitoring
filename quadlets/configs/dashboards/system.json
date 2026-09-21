@@ -71,11 +71,36 @@
         "name": "Boots",
         "expr": "{job=\"systemd-journal\", unit=\"init.scope\"} |= \"Startup finished in\"",
         "titleFormat": "Boot",
-        "textFormat": "{{.__line__}}"
+        "textFormat": "Startup finished"
+      },
+      {
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "enable": true,
+        "iconColor": "blue",
+        "name": "Deploys",
+        "expr": "{syslog_identifier=\"systemd\", user_unit=\"nc-pod.service\"} |= \"Started\"",
+        "titleFormat": "Deploy",
+        "textFormat": "Nextcloud pod started"
       }
     ]
   },
   "panels": [
+    {
+      "type": "row",
+      "title": "Now",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [],
+      "id": 1
+    },
     {
       "title": "Active alerts",
       "type": "stat",
@@ -85,7 +110,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 0,
+        "y": 1,
         "w": 4,
         "h": 4
       },
@@ -131,7 +156,8 @@
           "fields": ""
         }
       },
-      "id": 1
+      "description": "Alerts Alertmanager holds right now, from Prometheus and Loki rules. The list below names them.",
+      "id": 2
     },
     {
       "title": "Unit failures (24h)",
@@ -142,7 +168,7 @@
       },
       "gridPos": {
         "x": 4,
-        "y": 0,
+        "y": 1,
         "w": 4,
         "h": 4
       },
@@ -179,7 +205,7 @@
       },
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "textMode": "value",
         "reduceOptions": {
           "calcs": [
@@ -188,8 +214,8 @@
           "fields": ""
         }
       },
-      "description": "Podman's transient health-check units are not counted.",
-      "id": 2
+      "description": "systemd units that ended in failure, system and service users. Podman's transient health-check units are not counted.",
+      "id": 3
     },
     {
       "title": "SSH logins (24h)",
@@ -200,7 +226,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 0,
+        "y": 1,
         "w": 4,
         "h": 4
       },
@@ -219,6 +245,15 @@
       "fieldConfig": {
         "defaults": {
           "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
           "color": {
             "mode": "fixed"
           }
@@ -227,7 +262,7 @@
       },
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "textMode": "value",
         "reduceOptions": {
           "calcs": [
@@ -236,7 +271,8 @@
           "fields": ""
         }
       },
-      "id": 3
+      "description": "Accepted key logins. Each one also reaches the phone (SshLogin).",
+      "id": 4
     },
     {
       "title": "SSH failures (24h)",
@@ -247,7 +283,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 0,
+        "y": 1,
         "w": 4,
         "h": 4
       },
@@ -284,7 +320,7 @@
       },
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "textMode": "value",
         "reduceOptions": {
           "calcs": [
@@ -293,7 +329,8 @@
           "fields": ""
         }
       },
-      "id": 4
+      "description": "SSH is LAN-only, so anything here is a device on the LAN or a typo.",
+      "id": 5
     },
     {
       "title": "SELinux denials (24h)",
@@ -304,13 +341,13 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 0,
+        "y": 1,
         "w": 4,
         "h": 4
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({syslog_identifier=\"audit\"} |= \"avc:  denied\" != \"permissive=1\" [24h])) or vector(0)",
+          "expr": "sum(count_over_time({syslog_identifier=\"audit\"} |= \"avc:  denied\" != \"permissive=1\" != \"comm=\\\"pasta\" [24h])) or vector(0)",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -341,7 +378,7 @@
       },
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "textMode": "value",
         "reduceOptions": {
           "calcs": [
@@ -350,8 +387,8 @@
           "fields": ""
         }
       },
-      "description": "Enforced denials only.",
-      "id": 5
+      "description": "Enforced denials only, without pasta's capability probes at every pod start (harmless, excluded from the alert too).",
+      "id": 6
     },
     {
       "title": "OOM kills (24h)",
@@ -362,7 +399,7 @@
       },
       "gridPos": {
         "x": 20,
-        "y": 0,
+        "y": 1,
         "w": 4,
         "h": 4
       },
@@ -399,7 +436,7 @@
       },
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "textMode": "value",
         "reduceOptions": {
           "calcs": [
@@ -408,47 +445,151 @@
           "fields": ""
         }
       },
-      "id": 6
+      "description": "Processes the kernel killed for hitting a container's memory ceiling. The OomKill alert names the process.",
+      "id": 7
     },
     {
-      "title": "Alerts",
-      "type": "alertlist",
+      "type": "row",
+      "title": "Trends",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [],
+      "id": 8
+    },
+    {
+      "title": "Firing Prometheus alerts",
+      "type": "table",
       "datasource": {
-        "type": "alertmanager",
-        "uid": "alertmanager"
+        "type": "prometheus",
+        "uid": "prometheus"
       },
       "gridPos": {
         "x": 0,
-        "y": 4,
+        "y": 6,
         "w": 12,
         "h": 9
       },
-      "targets": [],
+      "targets": [
+        {
+          "expr": "ALERTS{alertstate=\"firing\"}",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
       "fieldConfig": {
-        "defaults": {},
-        "overrides": []
+        "defaults": {
+          "noValue": "none firing",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "critical": {
+                  "text": "critical",
+                  "color": "red",
+                  "index": 0
+                },
+                "warning": {
+                  "text": "warning",
+                  "color": "orange",
+                  "index": 1
+                },
+                "info": {
+                  "text": "info",
+                  "color": "blue",
+                  "index": 2
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "severity"
+            },
+            "properties": [
+              {
+                "id": "custom",
+                "value": {
+                  "cellOptions": {
+                    "type": "color-text"
+                  },
+                  "width": 90
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "alertname"
+            },
+            "properties": [
+              {
+                "id": "custom",
+                "value": {
+                  "width": 200
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
-        "datasource": "Alertmanager",
-        "showInstances": true,
-        "sortOrder": 1,
-        "stateFilter": {
-          "firing": true,
-          "pending": true,
-          "normal": false,
-          "error": true,
-          "noData": false
-        },
-        "viewMode": "list",
-        "groupMode": "default",
-        "maxItems": 20,
-        "alertName": "",
-        "dashboardAlerts": false,
-        "alertInstanceLabelFilter": "",
-        "folder": null
+        "sortBy": [
+          {
+            "displayName": "severity",
+            "desc": false
+          }
+        ],
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
       },
-      "description": "What Alertmanager holds right now, from Prometheus and Loki rules.",
-      "id": 7
+      "description": "Host and probe alerts (Prometheus rules) with their labels. Loki's alerts have no queryable state; ruler remote_write into Prometheus stalled every evaluation ('appender not ready'), so they show only as events in the logs below and on the phone.",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "__name__": true,
+              "alertstate": true,
+              "job": true
+            },
+            "indexByName": {
+              "alertname": 0,
+              "severity": 1
+            }
+          }
+        }
+      ],
+      "id": 9
     },
     {
       "title": "Journal errors by unit",
@@ -459,13 +600,13 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 4,
+        "y": 6,
         "w": 12,
         "h": 9
       },
       "targets": [
         {
-          "expr": "sum by (unit) (count_over_time({job=\"systemd-journal\", priority=~\"[0-3]\"} [$__auto]))",
+          "expr": "sum by (unit) (count_over_time({job=\"systemd-journal\", priority=~\"[0-3]\", unit!~\"user@.*\"} [$__auto]))",
           "legendFormat": "{{unit}}",
           "queryType": "range",
           "refId": "A",
@@ -478,14 +619,24 @@
       "fieldConfig": {
         "defaults": {
           "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
           "custom": {
-            "lineWidth": 1,
-            "fillOpacity": 40,
-            "showPoints": "never",
-            "spanNulls": true,
+            "lineWidth": 0,
+            "fillOpacity": 80,
+            "showPoints": "auto",
+            "spanNulls": false,
             "stacking": {
               "mode": "normal"
-            }
+            },
+            "drawStyle": "bars"
           }
         },
         "overrides": []
@@ -494,54 +645,17 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom",
-          "calcs": []
+          "calcs": [
+            "sum"
+          ]
         },
         "tooltip": {
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "description": "Priority 0 to 3: emerg, alert, crit, err. Container output carries the unit's priority (info), so this is the host's own noise.",
-      "id": 8
-    },
-    {
-      "title": "Container state changes",
-      "type": "logs",
-      "datasource": {
-        "type": "loki",
-        "uid": "loki"
-      },
-      "gridPos": {
-        "x": 0,
-        "y": 13,
-        "w": 12,
-        "h": 10
-      },
-      "targets": [
-        {
-          "expr": "{syslog_identifier=\"systemd\", user_unit=~\"(nextcloud|bunker|monitoring|nc|proxy)-.*\"} |~ \"Started|Stopped|Failed with result|Scheduled restart|Main process exited\" | line_format \"{{.user_unit}}: {{.__line__}}\"",
-          "legendFormat": "",
-          "queryType": "range",
-          "refId": "A",
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "options": {
-        "showTime": true,
-        "wrapLogMessage": true,
-        "sortOrder": "Descending",
-        "dedupStrategy": "none",
-        "enableLogDetails": true
-      },
-      "description": "Manager messages about the service users' containers. A deploy restarts the pods; anything else here deserves a look.",
-      "id": 9
+      "description": "Lines at priority emerg, alert, crit or err per interval, host units only. Container output is excluded: the proxy pod's journald driver files every stderr line as err, and the other pods log at info (passthrough).",
+      "id": 10
     },
     {
       "title": "Restarts per unit",
@@ -551,10 +665,10 @@
         "uid": "loki"
       },
       "gridPos": {
-        "x": 12,
-        "y": 13,
+        "x": 0,
+        "y": 15,
         "w": 12,
-        "h": 10
+        "h": 9
       },
       "targets": [
         {
@@ -571,11 +685,24 @@
       "fieldConfig": {
         "defaults": {
           "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
           "custom": {
-            "lineWidth": 1,
-            "fillOpacity": 12,
-            "showPoints": "never",
-            "spanNulls": true
+            "lineWidth": 0,
+            "fillOpacity": 80,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "normal"
+            },
+            "drawStyle": "bars"
           }
         },
         "overrides": []
@@ -584,14 +711,172 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom",
-          "calcs": []
+          "calcs": [
+            "sum"
+          ]
         },
         "tooltip": {
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "id": 10
+      "description": "Automatic restarts of container units. A deploy restarts the pods once; a bar every ten seconds is a crash loop (ContainerRestartLoop).",
+      "id": 11
+    },
+    {
+      "title": "Scheduled jobs",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 15,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "expr": "sum by (unit) (count_over_time({unit=~\"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service\"} |= \"Deactivated successfully\" [$__auto]))",
+          "legendFormat": "{{unit}} finished",
+          "queryType": "range",
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        },
+        {
+          "expr": "sum by (unit) (count_over_time({unit=~\"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service\"} |~ \"Failed with result\" [$__auto]))",
+          "legendFormat": "{{unit}} FAILED",
+          "queryType": "range",
+          "refId": "B",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "lineWidth": 0,
+            "fillOpacity": 80,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "normal"
+            },
+            "drawStyle": "bars"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*FAILED"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Snapshots hourly, the database dump before the Nextcloud snapshot, the backup to the NAS nightly. A missing bar raises BackupMissing after 30 h.",
+      "id": 12
+    },
+    {
+      "type": "row",
+      "title": "Logs",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [],
+      "id": 13
+    },
+    {
+      "title": "Container state changes",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "expr": "{syslog_identifier=\"systemd\", user_unit=~\"(nextcloud|bunker|monitoring|nc|proxy)-.*\"} |~ \"Started|Stopped|Failed with result|Scheduled restart|Main process exited\" | line_format \"{{.user_unit}}: {{ __line__ }}\"",
+          "legendFormat": "",
+          "queryType": "range",
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false
+      },
+      "description": "Manager messages about the service users' containers. A deploy restarts the pods; anything else here deserves a look.",
+      "id": 14
     },
     {
       "title": "Logins",
@@ -601,10 +886,10 @@
         "uid": "loki"
       },
       "gridPos": {
-        "x": 0,
-        "y": 23,
+        "x": 12,
+        "y": 25,
         "w": 12,
-        "h": 9
+        "h": 10
       },
       "targets": [
         {
@@ -619,7 +904,17 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
         "overrides": []
       },
       "options": {
@@ -627,9 +922,11 @@
         "wrapLogMessage": true,
         "sortOrder": "Descending",
         "dedupStrategy": "none",
-        "enableLogDetails": true
+        "enableLogDetails": true,
+        "prettifyLogMessage": false
       },
-      "id": 11
+      "description": "Accepted and refused SSH logins with user and address.",
+      "id": 15
     },
     {
       "title": "Updates, reboots, boots",
@@ -639,8 +936,8 @@
         "uid": "loki"
       },
       "gridPos": {
-        "x": 12,
-        "y": 23,
+        "x": 0,
+        "y": 35,
         "w": 12,
         "h": 9
       },
@@ -657,7 +954,17 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
         "overrides": []
       },
       "options": {
@@ -665,10 +972,11 @@
         "wrapLogMessage": true,
         "sortOrder": "Descending",
         "dedupStrategy": "none",
-        "enableLogDetails": true
+        "enableLogDetails": true,
+        "prettifyLogMessage": false
       },
-      "description": "rpm-ostree stages an update; auto-reboot-staged.timer reboots at night when one is staged.",
-      "id": 12
+      "description": "rpm-ostree stages an OS update (UpdateStaged); auto-reboot-staged.timer reboots at night when one is staged and no backup holds an inhibitor (AutoReboot); 'Startup finished' is the boot (HostBooted).",
+      "id": 16
     },
     {
       "title": "Scheduled jobs",
@@ -678,8 +986,8 @@
         "uid": "loki"
       },
       "gridPos": {
-        "x": 0,
-        "y": 32,
+        "x": 12,
+        "y": 35,
         "w": 12,
         "h": 9
       },
@@ -696,7 +1004,17 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
         "overrides": []
       },
       "options": {
@@ -704,10 +1022,11 @@
         "wrapLogMessage": true,
         "sortOrder": "Descending",
         "dedupStrategy": "none",
-        "enableLogDetails": true
+        "enableLogDetails": true,
+        "prettifyLogMessage": false
       },
-      "description": "Backups, snapshots, the database dump, job unsticking and image updates.",
-      "id": 13
+      "description": "Backups, snapshots, the database dump, job unsticking and image updates: start, end and errors.",
+      "id": 17
     },
     {
       "title": "SELinux denials and OOM kills",
@@ -717,14 +1036,14 @@
         "uid": "loki"
       },
       "gridPos": {
-        "x": 12,
-        "y": 32,
+        "x": 0,
+        "y": 44,
         "w": 12,
         "h": 9
       },
       "targets": [
         {
-          "expr": "{syslog_identifier=~\"audit|kernel\"} |~ \"avc:  denied|Killed process\" != \"permissive=1\"",
+          "expr": "{syslog_identifier=~\"audit|kernel\"} |~ \"avc:  denied|Killed process\" != \"permissive=1\" != \"comm=\\\"pasta\"",
           "legendFormat": "",
           "queryType": "range",
           "refId": "A",
@@ -735,7 +1054,17 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
         "overrides": []
       },
       "options": {
@@ -743,9 +1072,61 @@
         "wrapLogMessage": true,
         "sortOrder": "Descending",
         "dedupStrategy": "none",
-        "enableLogDetails": true
+        "enableLogDetails": true,
+        "prettifyLogMessage": false
       },
-      "id": 14
+      "description": "Raw audit and kernel lines. `scontext` names the confined domain; `comm` the program.",
+      "id": 18
+    },
+    {
+      "title": "Image pulls",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 44,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "expr": "{syslog_identifier=\"podman\"} |= \"Trying to pull\"",
+          "legendFormat": "",
+          "queryType": "range",
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false
+      },
+      "description": "Every image podman fetched: a deploy with a new tag, or podman-auto-update following a tag's digest (ImagePulled).",
+      "id": 19
     }
   ]
 }

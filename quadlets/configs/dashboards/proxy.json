@@ -71,11 +71,174 @@
         "name": "Boots",
         "expr": "{job=\"systemd-journal\", unit=\"init.scope\"} |= \"Startup finished in\"",
         "titleFormat": "Boot",
-        "textFormat": "{{.__line__}}"
+        "textFormat": "Startup finished"
+      },
+      {
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "enable": true,
+        "iconColor": "blue",
+        "name": "Deploys",
+        "expr": "{syslog_identifier=\"systemd\", user_unit=\"nc-pod.service\"} |= \"Started\"",
+        "titleFormat": "Deploy",
+        "textFormat": "Nextcloud pod started"
       }
     ]
   },
   "panels": [
+    {
+      "type": "row",
+      "title": "Now",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [],
+      "id": 1
+    },
+    {
+      "title": "Public URLs",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "probe_success",
+          "legendFormat": "{{instance}}",
+          "range": true,
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "UP",
+                  "color": "green",
+                  "index": 0
+                },
+                "0": {
+                  "text": "DOWN",
+                  "color": "red",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        }
+      },
+      "description": "Blackbox probe from this host through the public path: DNS, TLS (validated), BunkerWeb and the backend. PublicUrlDown fires after 5 min.",
+      "id": 2
+    },
+    {
+      "title": "Certificate expires in",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "min((probe_ssl_earliest_cert_expiry - time()) / 86400)",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: days",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 14
+              },
+              {
+                "color": "green",
+                "value": 30
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        }
+      },
+      "description": "Shortest remaining validity over all probed sites. Let's Encrypt renews at 30 days; CertificateExpiresSoon fires below 14.",
+      "id": 3
+    },
     {
       "title": "Requests / min",
       "type": "stat",
@@ -84,14 +247,14 @@
         "uid": "loki"
       },
       "gridPos": {
-        "x": 0,
-        "y": 0,
-        "w": 4,
+        "x": 12,
+        "y": 1,
+        "w": 3,
         "h": 4
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` [1h])) / 60",
+          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | status =~ \"[0-9]+\" [1h])) / 60",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -104,6 +267,15 @@
       "fieldConfig": {
         "defaults": {
           "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
           "color": {
             "mode": "fixed"
           }
@@ -112,7 +284,7 @@
       },
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "textMode": "value",
         "reduceOptions": {
           "calcs": [
@@ -121,25 +293,25 @@
           "fields": ""
         }
       },
-      "description": "Last hour, without BunkerWeb's own health checks.",
-      "id": 1
+      "description": "Average over the last hour, both sites, without BunkerWeb's own health checks.",
+      "id": 4
     },
     {
-      "title": "4xx (1h)",
+      "title": "Visitors (1h)",
       "type": "stat",
       "datasource": {
         "type": "loki",
         "uid": "loki"
       },
       "gridPos": {
-        "x": 4,
-        "y": 0,
-        "w": 4,
+        "x": 15,
+        "y": 1,
+        "w": 3,
         "h": 4
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | status =~ \"4..\" [1h])) or vector(0)",
+          "expr": "count(sum by (ip) (count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | status =~ \"[0-9]+\" [1h]))) or vector(0)",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -158,19 +330,18 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "orange",
-                "value": 50
               }
             ]
+          },
+          "color": {
+            "mode": "fixed"
           }
         },
         "overrides": []
       },
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "textMode": "value",
         "reduceOptions": {
           "calcs": [
@@ -179,7 +350,8 @@
           "fields": ""
         }
       },
-      "id": 2
+      "description": "Distinct client addresses in the last hour. Includes scanners.",
+      "id": 5
     },
     {
       "title": "5xx (1h)",
@@ -189,14 +361,14 @@
         "uid": "loki"
       },
       "gridPos": {
-        "x": 8,
-        "y": 0,
-        "w": 4,
+        "x": 18,
+        "y": 1,
+        "w": 3,
         "h": 4
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | status =~ \"5..\" [1h])) or vector(0)",
+          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | status =~ \"[0-9]+\" | status =~ \"5..\" [1h])) or vector(0)",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -227,7 +399,7 @@
       },
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "textMode": "value",
         "reduceOptions": {
           "calcs": [
@@ -236,55 +408,8 @@
           "fields": ""
         }
       },
-      "id": 3
-    },
-    {
-      "title": "Denied (24h)",
-      "type": "stat",
-      "datasource": {
-        "type": "loki",
-        "uid": "loki"
-      },
-      "gridPos": {
-        "x": 12,
-        "y": 0,
-        "w": 4,
-        "h": 4
-      },
-      "targets": [
-        {
-          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |= \"denied access\" [24h])) or vector(0)",
-          "legendFormat": "",
-          "queryType": "instant",
-          "refId": "A",
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "decimals": 0,
-          "color": {
-            "mode": "fixed"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "textMode": "value",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        }
-      },
-      "description": "Requests BunkerWeb refused: geo allowlist, method, ModSecurity, rate limit.",
-      "id": 4
+      "description": "Server errors answered to clients in the last hour. Zero is right; 502 means the backend pod was down.",
+      "id": 6
     },
     {
       "title": "Bans (24h)",
@@ -294,9 +419,9 @@
         "uid": "loki"
       },
       "gridPos": {
-        "x": 16,
-        "y": 0,
-        "w": 4,
+        "x": 21,
+        "y": 1,
+        "w": 3,
         "h": 4
       },
       "targets": [
@@ -314,6 +439,15 @@
       "fieldConfig": {
         "defaults": {
           "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
           "color": {
             "mode": "fixed"
           }
@@ -322,7 +456,7 @@
       },
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "textMode": "value",
         "reduceOptions": {
           "calcs": [
@@ -331,65 +465,21 @@
           "fields": ""
         }
       },
-      "id": 5
+      "description": "Clients BunkerWeb banned for 24 h after too many 4xx in a minute (threshold in bunker_service_bad_behavior_threshold). See the log panel for the addresses.",
+      "id": 7
     },
     {
-      "title": "Certificate lines (7d)",
-      "type": "stat",
-      "datasource": {
-        "type": "loki",
-        "uid": "loki"
-      },
+      "type": "row",
+      "title": "Trends",
+      "collapsed": false,
       "gridPos": {
-        "x": 20,
-        "y": 0,
-        "w": 4,
-        "h": 4
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 1
       },
-      "targets": [
-        {
-          "expr": "sum(count_over_time({container=\"bunker-scheduler\"} |~ \"(?i)certbot|certificate\" |~ \"(?i)error|fail\" [7d])) or vector(0)",
-          "legendFormat": "",
-          "queryType": "instant",
-          "refId": "A",
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "decimals": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "textMode": "value",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        }
-      },
-      "description": "Certificate errors from the scheduler in the last week. Zero is right.",
-      "id": 6
+      "panels": [],
+      "id": 8
     },
     {
       "title": "Requests by site",
@@ -400,13 +490,13 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 4,
+        "y": 6,
         "w": 12,
         "h": 8
       },
       "targets": [
         {
-          "expr": "sum by (site) (rate({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` [$__auto]))",
+          "expr": "sum by (site) (rate({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | status =~ \"[0-9]+\" [$__auto]))",
           "legendFormat": "{{site}}",
           "queryType": "range",
           "refId": "A",
@@ -419,11 +509,20 @@
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
           "custom": {
             "lineWidth": 1,
             "fillOpacity": 40,
-            "showPoints": "never",
-            "spanNulls": true,
+            "showPoints": "auto",
+            "spanNulls": false,
             "stacking": {
               "mode": "normal"
             }
@@ -435,14 +534,18 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom",
-          "calcs": []
+          "calcs": [
+            "mean",
+            "max"
+          ]
         },
         "tooltip": {
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "id": 7
+      "description": "Access-log lines per second per server name. The ntfy site is the phone polling; everything else is Nextcloud.",
+      "id": 9
     },
     {
       "title": "Responses by class",
@@ -453,13 +556,13 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 4,
+        "y": 6,
         "w": 12,
         "h": 8
       },
       "targets": [
         {
-          "expr": "sum by (class) (rate({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | label_format class=\"{{ .status | substr 0 1 }}xx\" [$__auto]))",
+          "expr": "sum by (class) (rate({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | status =~ \"[0-9]+\" | label_format class=\"{{ .status | substr 0 1 }}xx\" [$__auto]))",
           "legendFormat": "{{class}}",
           "queryType": "range",
           "refId": "A",
@@ -472,11 +575,20 @@
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
           "custom": {
             "lineWidth": 1,
             "fillOpacity": 40,
-            "showPoints": "never",
-            "spanNulls": true,
+            "showPoints": "auto",
+            "spanNulls": false,
             "stacking": {
               "mode": "normal"
             }
@@ -549,17 +661,21 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom",
-          "calcs": []
+          "calcs": [
+            "mean",
+            "max"
+          ]
         },
         "tooltip": {
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "id": 8
+      "description": "2xx ok, 3xx redirects (HTTP to HTTPS, login), 4xx client errors and WAF denials, 5xx backend errors.",
+      "id": 10
     },
     {
-      "title": "Denied and ModSecurity",
+      "title": "Denied, WAF matches and bans",
       "type": "timeseries",
       "datasource": {
         "type": "loki",
@@ -567,14 +683,14 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 12,
+        "y": 14,
         "w": 12,
         "h": 8
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |= \"denied access\" [$__auto]))",
-          "legendFormat": "denied",
+          "expr": "label_replace(sum(count_over_time({container=\"bunker-nginx\"} |= \"denied access\" [$__auto])), \"series\", \"denied \u2013 BunkerWeb refused the request\", \"\", \"\")",
+          "legendFormat": "{{series}}",
           "queryType": "range",
           "refId": "A",
           "datasource": {
@@ -583,8 +699,8 @@
           }
         },
         {
-          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |= \"ModSecurity\" [$__auto]))",
-          "legendFormat": "modsecurity match",
+          "expr": "label_replace(sum(count_over_time({container=\"bunker-nginx\"} |= \"ModSecurity\" [$__auto])), \"series\", \"modsecurity \u2013 a CRS rule matched\", \"\", \"\")",
+          "legendFormat": "{{series}}",
           "queryType": "range",
           "refId": "B",
           "datasource": {
@@ -593,8 +709,8 @@
           }
         },
         {
-          "expr": "sum(count_over_time({container=\"bunker-nginx\"} |= \"[BADBEHAVIOR]\" |= \"is banned for\" [$__auto]))",
-          "legendFormat": "ban",
+          "expr": "label_replace(sum(count_over_time({container=\"bunker-nginx\"} |= \"[BADBEHAVIOR]\" |= \"is banned for\" [$__auto])), \"series\", \"ban \u2013 client blocked for 24 h\", \"\", \"\")",
+          "legendFormat": "{{series}}",
           "queryType": "range",
           "refId": "C",
           "datasource": {
@@ -606,11 +722,130 @@
       "fieldConfig": {
         "defaults": {
           "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "lineWidth": 0,
+            "fillOpacity": 80,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "drawStyle": "bars"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "denied \u2013 BunkerWeb refused the request"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "modsecurity \u2013 a CRS rule matched"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ban \u2013 client blocked for 24 h"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Counts per interval. Denials come from the geo allowlist, the method filter, ModSecurity or the rate limit. Scanners produce a steady trickle; a burst from one address ends in a ban.",
+      "id": 11
+    },
+    {
+      "title": "Probe duration",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 14,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "probe_duration_seconds",
+          "legendFormat": "{{instance}}",
+          "range": true,
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
           "custom": {
             "lineWidth": 1,
             "fillOpacity": 12,
-            "showPoints": "never",
-            "spanNulls": true
+            "showPoints": "auto",
+            "spanNulls": false
           }
         },
         "overrides": []
@@ -619,56 +854,31 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom",
-          "calcs": []
+          "calcs": [
+            "mean",
+            "max"
+          ]
         },
         "tooltip": {
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "id": 9
+      "description": "Full request time of the blackbox probe including DNS and TLS handshake, once a minute. A step up means the backend or the WAF got slower.",
+      "id": 12
     },
     {
-      "title": "ModSecurity rules hit",
-      "type": "table",
-      "datasource": {
-        "type": "loki",
-        "uid": "loki"
-      },
+      "type": "row",
+      "title": "Details",
+      "collapsed": false,
       "gridPos": {
-        "x": 12,
-        "y": 12,
-        "w": 12,
-        "h": 8
+        "x": 0,
+        "y": 22,
+        "w": 24,
+        "h": 1
       },
-      "targets": [
-        {
-          "expr": "topk(10, sum by (id) (count_over_time({container=\"bunker-nginx\"} |= \"ModSecurity\" | regexp `\\[id \"(?P<id>\\d+)\"\\]` [$__range])))",
-          "legendFormat": "",
-          "queryType": "instant",
-          "refId": "A",
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "options": {
-        "sortBy": [
-          {
-            "displayName": "Value",
-            "desc": true
-          }
-        ],
-        "showHeader": true,
-        "cellHeight": "sm"
-      },
-      "description": "CRS rule ids over the dashboard range. 930130 is scanners probing /.env and friends; 920440 a blocked file extension.",
-      "id": 10
+      "panels": [],
+      "id": 13
     },
     {
       "title": "Top clients",
@@ -679,13 +889,13 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 20,
+        "y": 23,
         "w": 8,
-        "h": 8
+        "h": 9
       },
       "targets": [
         {
-          "expr": "topk(10, sum by (ip) (count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` [$__range])))",
+          "expr": "topk(10, sum by (ip) (count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | status =~ \"[0-9]+\" [$__range])))",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -696,20 +906,49 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
         "overrides": []
       },
       "options": {
         "sortBy": [
           {
-            "displayName": "Value",
+            "displayName": "requests",
             "desc": true
           }
         ],
         "showHeader": true,
-        "cellHeight": "sm"
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
       },
-      "id": 11
+      "description": "Addresses with the most requests in the dashboard range. Own devices sit on top; a stranger with thousands of hits is a scanner.",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value": "requests",
+              "Value #A": "requests"
+            }
+          }
+        }
+      ],
+      "id": 14
     },
     {
       "title": "Top paths",
@@ -720,13 +959,13 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 20,
+        "y": 23,
         "w": 8,
-        "h": 8
+        "h": 9
       },
       "targets": [
         {
-          "expr": "topk(10, sum by (uri) (count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` [$__range])))",
+          "expr": "topk(10, sum by (uri) (count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | status =~ \"[0-9]+\" [$__range])))",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -737,20 +976,49 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
         "overrides": []
       },
       "options": {
         "sortBy": [
           {
-            "displayName": "Value",
+            "displayName": "requests",
             "desc": true
           }
         ],
         "showHeader": true,
-        "cellHeight": "sm"
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
       },
-      "id": 12
+      "description": "Most requested paths across both sites.",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value": "requests",
+              "Value #A": "requests"
+            }
+          }
+        }
+      ],
+      "id": 15
     },
     {
       "title": "Top user agents",
@@ -761,13 +1029,13 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 20,
+        "y": 23,
         "w": 8,
-        "h": 8
+        "h": 9
       },
       "targets": [
         {
-          "expr": "topk(10, sum by (ua) (count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` [$__range])))",
+          "expr": "topk(10, sum by (ua) (count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | status =~ \"[0-9]+\" [$__range])))",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -778,20 +1046,272 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
         "overrides": []
       },
       "options": {
         "sortBy": [
           {
-            "displayName": "Value",
+            "displayName": "requests",
             "desc": true
           }
         ],
         "showHeader": true,
-        "cellHeight": "sm"
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
       },
-      "id": 13
+      "description": "mirall is the Nextcloud desktop client; DAVx5 and Thunderbird sync calendars and contacts.",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value": "requests",
+              "Value #A": "requests"
+            }
+          }
+        }
+      ],
+      "id": 16
+    },
+    {
+      "title": "ModSecurity rules hit",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 8,
+        "h": 9
+      },
+      "targets": [
+        {
+          "expr": "topk(10, sum by (id) (count_over_time({container=\"bunker-nginx\"} |= \"ModSecurity\" | regexp `\\[id \"(?P<id>\\d+)\"\\]` | id != \"\" [$__range])))",
+          "legendFormat": "",
+          "queryType": "instant",
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "matches",
+            "desc": true
+          }
+        ],
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "description": "OWASP CRS rule ids over the dashboard range. 930130 is scanners probing /.env and friends; 920440 a blocked file extension; 949110 the anomaly-score block itself.",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value": "matches",
+              "Value #A": "matches"
+            }
+          }
+        }
+      ],
+      "id": 17
+    },
+    {
+      "title": "Responses by status",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 32,
+        "w": 8,
+        "h": 9
+      },
+      "targets": [
+        {
+          "expr": "sum by (status) (count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | status =~ \"[0-9]+\" [$__range]))",
+          "legendFormat": "",
+          "queryType": "instant",
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "requests",
+            "desc": true
+          }
+        ],
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "description": "Exact status codes over the dashboard range.",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value": "requests",
+              "Value #A": "requests"
+            }
+          }
+        }
+      ],
+      "id": 18
+    },
+    {
+      "title": "Requests by site and method",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 32,
+        "w": 8,
+        "h": 9
+      },
+      "targets": [
+        {
+          "expr": "sum by (site, method) (count_over_time({container=\"bunker-nginx\"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != \"bwapi\" | pattern `<site> <ip> - <_> - [<_>] \"<method> <uri> <_>\" <status> <bytes> \"<_>\" \"<ua>\"` | status =~ \"[0-9]+\" [$__range]))",
+          "legendFormat": "",
+          "queryType": "instant",
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "requests",
+            "desc": true
+          }
+        ],
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "description": "PROPFIND and REPORT are WebDAV/CalDAV clients syncing.",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value": "requests",
+              "Value #A": "requests"
+            }
+          }
+        }
+      ],
+      "id": 19
+    },
+    {
+      "type": "row",
+      "title": "Logs",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [],
+      "id": 20
     },
     {
       "title": "Bans and denials",
@@ -802,13 +1322,13 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 28,
+        "y": 42,
         "w": 12,
         "h": 10
       },
       "targets": [
         {
-          "expr": "{container=\"bunker-nginx\"} |~ \"denied access|\\\\[BADBEHAVIOR\\\\]\" | regexp \"client: (?P<client>[0-9.]+)\" | line_format \"{{.client}} {{.__line__}}\" ",
+          "expr": "{container=\"bunker-nginx\"} |~ \"denied access|is banned for\"",
           "legendFormat": "",
           "queryType": "range",
           "refId": "A",
@@ -819,7 +1339,17 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
         "overrides": []
       },
       "options": {
@@ -827,9 +1357,11 @@
         "wrapLogMessage": true,
         "sortOrder": "Descending",
         "dedupStrategy": "none",
-        "enableLogDetails": true
+        "enableLogDetails": true,
+        "prettifyLogMessage": false
       },
-      "id": 14
+      "description": "Every refused request and every ban, newest first. If your own address appears, `bwcli unban <ip>` in the bunker-scheduler container lifts it.",
+      "id": 21
     },
     {
       "title": "Errors and certificate events",
@@ -840,7 +1372,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 28,
+        "y": 42,
         "w": 12,
         "h": 10
       },
@@ -857,7 +1389,17 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
         "overrides": []
       },
       "options": {
@@ -865,9 +1407,11 @@
         "wrapLogMessage": true,
         "sortOrder": "Descending",
         "dedupStrategy": "none",
-        "enableLogDetails": true
+        "enableLogDetails": true,
+        "prettifyLogMessage": false
       },
-      "id": 15
+      "description": "nginx errors and the scheduler's certificate work. A renewal appears here once a month; an error line raises CertificateRenewalFailed.",
+      "id": 22
     }
   ]
 }
