@@ -1121,7 +1121,7 @@
     },
     {
       "type": "row",
-      "title": "Logs",
+      "title": "Audit",
       "collapsed": false,
       "gridPos": {
         "x": 0,
@@ -1133,6 +1133,205 @@
       "id": 17
     },
     {
+      "title": "What happened to files",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "expr": "sum by (action) (count_over_time({syslog_identifier=\"nextcloud\"} | json | app=\"admin_audit\" | label_format action=`{{ regexReplaceAll \"^([A-Za-z]+ [a-z]+).*$\" .message \"${1}\" }}` [$__auto]))",
+          "legendFormat": "{{action}}",
+          "queryType": "range",
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "lineWidth": 0,
+            "fillOpacity": 80,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "normal"
+            },
+            "drawStyle": "bars"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Every action the audit app recorded, by kind: File written, File deleted, File renamed, Login successful and so on. Needs nextcloud_service_apps to include admin_audit.",
+      "id": 18
+    },
+    {
+      "title": "Busiest users",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 33,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "expr": "topk(10, sum by (user, action) (count_over_time({syslog_identifier=\"nextcloud\"} | json | app=\"admin_audit\" | label_format action=`{{ regexReplaceAll \"^([A-Za-z]+ [a-z]+).*$\" .message \"${1}\" }}` [$__range])))",
+          "legendFormat": "",
+          "queryType": "instant",
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "actions",
+            "desc": true
+          }
+        ],
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "description": "Who did how much of what over the dashboard range. `--` is a background job or the command line, not a person.",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value": "actions",
+              "Value #A": "actions"
+            }
+          }
+        }
+      ],
+      "id": 19
+    },
+    {
+      "title": "File activity",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 42,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "expr": "{syslog_identifier=\"nextcloud\"} | json | app=\"admin_audit\" | label_format action=`{{ regexReplaceAll \"^([A-Za-z]+ [a-z]+).*$\" .message \"${1}\" }}` | action !~ \"(Preview|File) accessed\" | line_format \"{{.user}} {{.message}}\"",
+          "legendFormat": "",
+          "queryType": "range",
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false
+      },
+      "description": "Writes, deletes, renames and shares with the user that caused them. Reads are left out: preview generation and sync clients read constantly.",
+      "id": 20
+    },
+    {
+      "type": "row",
+      "title": "Logs",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 52,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [],
+      "id": 21
+    },
+    {
       "title": "Failed logins",
       "type": "logs",
       "datasource": {
@@ -1141,7 +1340,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 33,
+        "y": 53,
         "w": 12,
         "h": 9
       },
@@ -1180,7 +1379,7 @@
         "prettifyLogMessage": false
       },
       "description": "User name and source address of every failed login.",
-      "id": 18
+      "id": 22
     },
     {
       "title": "App warnings and errors",
@@ -1191,7 +1390,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 33,
+        "y": 53,
         "w": 12,
         "h": 9
       },
@@ -1230,7 +1429,7 @@
         "prettifyLogMessage": false
       },
       "description": "Nextcloud's own log at level warning and above, one line per entry. Expand a line for the full JSON (user, URL, exception).",
-      "id": 19
+      "id": 23
     },
     {
       "title": "Background containers (cron, preview, recognize, push)",
@@ -1241,7 +1440,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 42,
+        "y": 62,
         "w": 12,
         "h": 9
       },
@@ -1280,7 +1479,7 @@
         "prettifyLogMessage": false
       },
       "description": "Output of the four helper containers. Recognize logs each classified batch; the preview generator each folder it finished.",
-      "id": 20
+      "id": 24
     },
     {
       "title": "Database and cache",
@@ -1291,7 +1490,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 42,
+        "y": 62,
         "w": 12,
         "h": 9
       },
@@ -1330,7 +1529,7 @@
         "prettifyLogMessage": false
       },
       "description": "PostgreSQL and redis, warnings and up. Empty is normal.",
-      "id": 21
+      "id": 25
     }
   ]
 }

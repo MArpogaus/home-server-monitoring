@@ -819,8 +819,8 @@
       "id": 13
     },
     {
-      "title": "Scheduled jobs",
-      "type": "timeseries",
+      "title": "Scheduled jobs: green finished, blue running, red failed",
+      "type": "state-timeline",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -829,24 +829,14 @@
         "x": 0,
         "y": 33,
         "w": 24,
-        "h": 8
+        "h": 9
       },
       "targets": [
         {
-          "expr": "sum by (unit) (count_over_time({unit=~\"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service\"} |= \"Deactivated successfully\" [$__auto]))",
-          "legendFormat": "{{unit}} finished",
+          "expr": "last_over_time({syslog_identifier=\"systemd\", unit=~\"btrfs-backup@.+\\\\.service|btrfs-snapshot@.+\\\\.service|pg-dumpall.service|unstick-jobs.service|podman-auto-update.service|auto-reboot-staged.service\"} |~ \"Starting |Deactivated successfully|Failed with result|Finished \" | regexp `(?P<ev>Starting|Deactivated successfully|Failed with result|Finished)` | label_format v=`{{ if eq .ev \"Starting\" }}1{{ else if eq .ev \"Failed with result\" }}2{{ else }}0{{ end }}` | unwrap v [$__auto]) by (unit)",
+          "legendFormat": "{{unit}}",
           "queryType": "range",
           "refId": "A",
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          }
-        },
-        {
-          "expr": "sum by (unit) (count_over_time({unit=~\"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service\"} |~ \"Failed with result\" [$__auto]))",
-          "legendFormat": "{{unit}} FAILED",
-          "queryType": "range",
-          "refId": "B",
           "datasource": {
             "type": "loki",
             "uid": "loki"
@@ -855,7 +845,28 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "finished",
+                  "color": "green",
+                  "index": 0
+                },
+                "1": {
+                  "text": "running",
+                  "color": "blue",
+                  "index": 1
+                },
+                "2": {
+                  "text": "failed",
+                  "color": "red",
+                  "index": 2
+                }
+              }
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -866,48 +877,29 @@
             ]
           },
           "custom": {
-            "lineWidth": 0,
             "fillOpacity": 80,
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "mode": "normal"
-            },
-            "drawStyle": "bars"
+            "lineWidth": 0,
+            "spanNulls": true
           }
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*FAILED"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "red"
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "options": {
+        "mergeValues": true,
+        "showValue": "never",
+        "rowHeight": 0.9,
+        "alignValue": "left",
         "legend": {
           "displayMode": "list",
           "placement": "bottom",
-          "calcs": [
-            "sum"
-          ]
+          "showLegend": true
         },
         "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
+          "mode": "single",
+          "sort": "none"
         }
       },
-      "description": "Snapshots daily, the database dump before the Nextcloud snapshot, the backup to the NAS nightly. A missing bar raises BackupMissing after 30 h.",
+      "description": "One band per job: where it turns blue the job was running, so the width is how long it took. Snapshots run daily, the database dump before the Nextcloud snapshot, the backup to the NAS nightly. A job that never runs raises BackupMissing, SnapshotMissing or DumpMissing after 30 h; a red band raises ScheduledJobFailed.",
       "id": 14
     },
     {
@@ -919,7 +911,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 41,
+        "y": 42,
         "w": 24,
         "h": 8
       },
@@ -986,7 +978,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 49,
+        "y": 50,
         "w": 24,
         "h": 1
       },
@@ -1002,7 +994,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 50,
+        "y": 51,
         "w": 12,
         "h": 10
       },
@@ -1052,7 +1044,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 50,
+        "y": 51,
         "w": 12,
         "h": 10
       },
@@ -1102,7 +1094,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 60,
+        "y": 61,
         "w": 12,
         "h": 9
       },
@@ -1152,7 +1144,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 60,
+        "y": 61,
         "w": 12,
         "h": 9
       },
@@ -1202,7 +1194,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 69,
+        "y": 70,
         "w": 24,
         "h": 9
       },

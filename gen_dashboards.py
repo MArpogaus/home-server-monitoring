@@ -41,6 +41,12 @@ REBOOT_STATE = ('{unit="auto-reboot-staged.service"} |~ "No staged deployment|St
 # starts at "Accepted" or "Connection closed"; the community SSH dashboards
 # (grafana.com 17514 and 21750) assume promtail on /var/log/auth.log and match
 # "sshd[", which never appears here.
+# admin_audit writes one JSON line per action: who did what to which file.
+# The first two words of the message are the action ("File written",
+# "File deleted", "Login successful", ...).
+AUDIT = ('{syslog_identifier="nextcloud"} | json | app="admin_audit"'
+         ' | label_format action=`{{ regexReplaceAll "^([A-Za-z]+ [a-z]+).*$" .message "${1}" }}`')
+
 # BunkerWeb refuses a request with "[ACCESS] denied access from <reason> : ...,
 # client: <ip>" and bans a client with "[BADBEHAVIOR] IP <ip> is banned for <n>s".
 BW_DENY = ('{container="bunker-nginx"} |= "denied access"'
@@ -48,6 +54,15 @@ BW_DENY = ('{container="bunker-nginx"} |= "denied access"'
            ' | regexp `client: (?P<ip>[0-9a-fA-F.:]+)`')
 BW_BAN = ('{container="bunker-nginx"} |= "is banned for"'
           ' | regexp `IP (?P<ip>[0-9a-fA-F.:]+) is banned for`')
+# systemd says "Starting x.service", then "Finished" or "Deactivated
+# successfully" or "Failed with result". Turned into a number and carried
+# forward, that is a band per job: when it ran, how long, how it ended.
+JOBS = ('{syslog_identifier="systemd", unit=~"btrfs-backup@.+\\\\.service|btrfs-snapshot@.+\\\\.service'
+        '|pg-dumpall.service|unstick-jobs.service|podman-auto-update.service|auto-reboot-staged.service"}'
+        ' |~ "Starting |Deactivated successfully|Failed with result|Finished "'
+        ' | regexp `(?P<ev>Starting|Deactivated successfully|Failed with result|Finished)`'
+        ' | label_format v=`{{ if eq .ev "Starting" }}1{{ else if eq .ev "Failed with result" }}2{{ else }}0{{ end }}`')
+JOBS_MAP = [(0, "finished", "green"), (1, "running", "blue"), (2, "failed", "red")]
 SSHD = '{job="systemd-journal", unit="sshd.service"}'
 SSH_OK = SSHD + ' |= "Accepted" | pattern `Accepted <method> for <user> from <ip> port <_>`'
 SSH_BAD = (SSHD + ' |~ "Failed (password|publickey)|Invalid user|Connection closed by authenticating"'
@@ -423,6 +438,15 @@ P.append(top_table("App log by level", LOKI, loki_instant(f"sum by (level, app) 
     overrides=[by_name("level", custom={"cellOptions": {"type": "color-text"}, "width": 90})],
     desc="Warnings and errors per Nextcloud app over the dashboard range. The logs panel below has the messages."))
 
+P.append(row("Audit", g))
+P.append(panel("What happened to files", "timeseries", LOKI, [loki(f"sum by (action) (count_over_time({AUDIT} [$__auto]))", "{{action}}")], g, w=12, h=9,
+    decimals=0, bars=True, stack=True, legend=("sum",),
+    desc="Every action the audit app recorded, by kind: File written, File deleted, File renamed, Login successful and so on. Needs nextcloud_service_apps to include admin_audit."))
+P.append(top_table("Busiest users", LOKI, loki_instant(f"topk(10, sum by (user, action) (count_over_time({AUDIT} [$__range])))"), g, value="actions", w=12, h=9,
+    desc="Who did how much of what over the dashboard range. `--` is a background job or the command line, not a person."))
+P.append(panel("File activity", "logs", LOKI, [loki(f'{AUDIT} | action !~ "(Preview|File) accessed" | line_format "{{{{.user}}}} {{{{.message}}}}"')], g, w=24, h=10,
+    desc="Writes, deletes, renames and shares with the user that caused them. Reads are left out: preview generation and sync clients read constantly."))
+
 P.append(row("Logs", g))
 P.append(panel("Failed logins", "logs", LOKI, [loki('{syslog_identifier="nextcloud"} |= "Login failed: \'" | regexp "Login failed: \'(?P<user>[^\']+)\' \\\\(Remote IP: \'(?P<ip>[^\']+)\'\\\\)" | line_format "{{.user}} from {{.ip}}"')], g, w=12, h=9,
     desc="User name and source address of every failed login."))
@@ -466,11 +490,10 @@ P.append(panel("Alerts firing", "state-timeline", PROM, [prom('ALERTS{alertstate
     desc="Prometheus rules only: host, target and probe alerts. Loki's rules have no queryable state, so its alerts appear as events in the log panels and on the phone."))
 P.append(panel("Journal error lines by unit", "timeseries", LOKI, [loki('sum by (unit) (count_over_time({job="systemd-journal", priority=~"[0-3]", unit!~"user@.*|session-.*|run-.*", unit!=""} [$__auto]))', "{{unit}}")], g, w=12, h=9, decimals=0, stack=True, bars=True, legend=("sum",),
     desc="Lines the host's own units logged at priority emerg, alert, crit or err, counted per bar. The legend column is the total over the selected range. Login session scopes and container output are excluded: the proxy pod's journald driver files every stderr line as err, and the other pods log at info."))
-P.append(panel("Scheduled jobs", "timeseries", LOKI, [
-    loki('sum by (unit) (count_over_time({unit=~"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service"} |= "Deactivated successfully" [$__auto]))', "{{unit}} finished"),
-    loki('sum by (unit) (count_over_time({unit=~"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service"} |~ "Failed with result" [$__auto]))', "{{unit}} FAILED")], g, w=24, h=8, decimals=0, bars=True, stack=True, legend=("sum",),
-    overrides=[{"matcher": {"id": "byRegexp", "options": ".*FAILED"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}]}],
-    desc="Snapshots daily, the database dump before the Nextcloud snapshot, the backup to the NAS nightly. A missing bar raises BackupMissing after 30 h."))
+P.append(panel("Scheduled jobs: green finished, blue running, red failed", "state-timeline", LOKI,
+    [loki(f"last_over_time({JOBS} | unwrap v [$__auto]) by (unit)", "{{unit}}")], g, w=24, h=9,
+    mappings=JOBS_MAP,
+    desc="One band per job: where it turns blue the job was running, so the width is how long it took. Snapshots run daily, the database dump before the Nextcloud snapshot, the backup to the NAS nightly. A job that never runs raises BackupMissing, SnapshotMissing or DumpMissing after 30 h; a red band raises ScheduledJobFailed."))
 
 P.append(top_table("Failed units", LOKI, loki_instant('topk(10, sum by (unit, user_unit) (count_over_time({syslog_identifier="systemd", user_unit!~"[0-9a-f]{64}-.*"} |~ "(?i)failed with result" [$__range])))'), g, value="failures", w=24, h=8,
     desc="Which units produced the failure count above, system units by `unit` and container units by `user_unit`. A deploy restarting a pod is the usual source; anything else deserves the log below."))
