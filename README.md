@@ -35,7 +35,8 @@ Grafana, Loki and Prometheus are published on the host's `127.0.0.2`, ntfy on
 `127.0.0.1`. pasta maps only `127.0.0.1` into the proxy pod, so the proxy can
 reach ntfy and nothing else of this stack. Reach Grafana with
 `ssh -L 3000:127.0.0.2:3000 core@host`, user `admin`, password
-`monitoring_service_grafana_admin_password`.
+`monitoring_service_grafana_admin_password`. securecore's sshd forbids
+forwarding; `base_setup` allows local forwarding for the admin user alone.
 
 ## Dashboards
 
