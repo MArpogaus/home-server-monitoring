@@ -163,12 +163,18 @@ groups:
     rules:
       - alert: OomKill
         expr: |
-          sum(count_over_time({job="systemd-journal", syslog_identifier="kernel"} |= "Killed process" [5m])) > 0
+          sum by (proc) (
+            count_over_time(
+              {job="systemd-journal", syslog_identifier="kernel"}
+                |= "Killed process"
+                | regexp `Killed process \d+ \((?P<proc>[^)]+)\)` [5m]
+            )
+          ) > 0
         labels:
           severity: warning
         annotations:
-          summary: "The kernel killed a process for memory"
-          description: "Check `journalctl -k | grep -B3 'Killed process'` for the container and the process."
+          summary: "OOM: {{ $labels.proc }} killed"
+          description: "`journalctl -k | grep -B3 'Killed process'` names the container's unit in oom_memcg."
 
       - alert: SelinuxDenials
         expr: |
