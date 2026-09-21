@@ -744,7 +744,7 @@
       "id": 11
     },
     {
-      "title": "Denied, WAF matches and bans",
+      "title": "Why requests were refused",
       "type": "timeseries",
       "datasource": {
         "type": "loki",
@@ -758,8 +758,8 @@
       },
       "targets": [
         {
-          "expr": "label_replace(sum(count_over_time({container=\"bunker-nginx\"} |= \"denied access\" [$__auto])), \"series\", \"denied \u2013 BunkerWeb refused the request\", \"\", \"\")",
-          "legendFormat": "{{series}}",
+          "expr": "sum by (reason) (count_over_time({container=\"bunker-nginx\"} |= \"denied access\" | regexp `denied access from (?P<reason>[a-z]+)` | regexp `client: (?P<ip>[0-9a-fA-F.:]+)` [$__auto]))",
+          "legendFormat": "{{reason}}",
           "queryType": "range",
           "refId": "A",
           "datasource": {
@@ -768,7 +768,7 @@
           }
         },
         {
-          "expr": "label_replace(sum(count_over_time({container=\"bunker-nginx\"} |= \"ModSecurity\" [$__auto])), \"series\", \"modsecurity \u2013 a CRS rule matched\", \"\", \"\")",
+          "expr": "label_replace(sum(count_over_time({container=\"bunker-nginx\"} |= \"ModSecurity\" [$__auto])), \"series\", \"modsecurity\", \"\", \"\")",
           "legendFormat": "{{series}}",
           "queryType": "range",
           "refId": "B",
@@ -778,7 +778,7 @@
           }
         },
         {
-          "expr": "label_replace(sum(count_over_time({container=\"bunker-nginx\"} |= \"[BADBEHAVIOR]\" |= \"is banned for\" [$__auto])), \"series\", \"ban \u2013 client blocked for 24 h\", \"\", \"\")",
+          "expr": "label_replace(sum(count_over_time({container=\"bunker-nginx\"} |= \"is banned for\" | regexp `IP (?P<ip>[0-9a-fA-F.:]+) is banned for` [$__auto])), \"series\", \"ban\", \"\", \"\")",
           "legendFormat": "{{series}}",
           "queryType": "range",
           "refId": "C",
@@ -805,6 +805,9 @@
             "fillOpacity": 80,
             "showPoints": "auto",
             "spanNulls": false,
+            "stacking": {
+              "mode": "normal"
+            },
             "drawStyle": "bars"
           }
         },
@@ -812,22 +815,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "denied \u2013 BunkerWeb refused the request"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "orange"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "modsecurity \u2013 a CRS rule matched"
+              "options": "modsecurity"
             },
             "properties": [
               {
@@ -842,7 +830,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "ban \u2013 client blocked for 24 h"
+              "options": "ban"
             },
             "properties": [
               {
@@ -853,12 +841,57 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "country"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "dnsbl"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "purple"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "blacklist"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "semi-dark-orange"
+                }
+              }
+            ]
           }
         ]
       },
       "options": {
         "legend": {
-          "displayMode": "table",
+          "displayMode": "list",
           "placement": "bottom",
           "calcs": [
             "sum"
@@ -869,7 +902,7 @@
           "sort": "desc"
         }
       },
-      "description": "Counts per interval. Denials come from the geo allowlist, the method filter, ModSecurity or the rate limit. Scanners produce a steady trickle; a burst from one address ends in a ban.",
+      "description": "Every refusal by the check that made it: country (the geo allowlist), dnsbl (a public blocklist), blacklist (BunkerWeb's own), modsecurity (a CRS rule), ban (the client was already blocked). A burst from one address ends in a ban.",
       "id": 12
     },
     {
@@ -1345,7 +1378,7 @@
       "id": 19
     },
     {
-      "title": "Requests by site and method",
+      "title": "Banned clients",
       "type": "table",
       "datasource": {
         "type": "loki",
@@ -1354,6 +1387,146 @@
       "gridPos": {
         "x": 16,
         "y": 41,
+        "w": 8,
+        "h": 9
+      },
+      "targets": [
+        {
+          "expr": "topk(10, sum by (ip) (count_over_time({container=\"bunker-nginx\"} |= \"is banned for\" | regexp `IP (?P<ip>[0-9a-fA-F.:]+) is banned for` [$__range])))",
+          "legendFormat": "",
+          "queryType": "instant",
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "bans",
+            "desc": true
+          }
+        ],
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "description": "Addresses BunkerWeb banned in the dashboard range, and how often. A ban lasts 24 h; `bwcli unban <ip>` in the scheduler container lifts one early.",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value": "bans",
+              "Value #A": "bans"
+            }
+          }
+        }
+      ],
+      "id": 20
+    },
+    {
+      "title": "Refused clients",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 50,
+        "w": 8,
+        "h": 9
+      },
+      "targets": [
+        {
+          "expr": "topk(10, sum by (ip, reason) (count_over_time({container=\"bunker-nginx\"} |= \"denied access\" | regexp `denied access from (?P<reason>[a-z]+)` | regexp `client: (?P<ip>[0-9a-fA-F.:]+)` [$__range])))",
+          "legendFormat": "",
+          "queryType": "instant",
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "refusals",
+            "desc": true
+          }
+        ],
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "description": "Addresses that were refused, with the check that refused them.",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value": "refusals",
+              "Value #A": "refusals"
+            }
+          }
+        }
+      ],
+      "id": 21
+    },
+    {
+      "title": "Requests by site and method",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 50,
         "w": 8,
         "h": 9
       },
@@ -1412,7 +1585,7 @@
           }
         }
       ],
-      "id": 20
+      "id": 22
     },
     {
       "type": "row",
@@ -1420,12 +1593,12 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 50,
+        "y": 59,
         "w": 24,
         "h": 1
       },
       "panels": [],
-      "id": 21
+      "id": 23
     },
     {
       "title": "Bans and denials",
@@ -1436,7 +1609,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 51,
+        "y": 60,
         "w": 12,
         "h": 10
       },
@@ -1475,7 +1648,7 @@
         "prettifyLogMessage": false
       },
       "description": "Every refused request and every ban, newest first. If your own address appears, `bwcli unban <ip>` in the bunker-scheduler container lifts it.",
-      "id": 22
+      "id": 24
     },
     {
       "title": "Errors and certificate events",
@@ -1486,7 +1659,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 51,
+        "y": 60,
         "w": 12,
         "h": 10
       },
@@ -1525,7 +1698,7 @@
         "prettifyLogMessage": false
       },
       "description": "nginx errors and the scheduler's certificate work. A renewal appears here once a month; an error line raises CertificateRenewalFailed.",
-      "id": 23
+      "id": 25
     }
   ]
 }

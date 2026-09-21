@@ -2,7 +2,21 @@ loki.source.journal "host" {
   path           = "/var/log/journal"
   max_age        = "168h"
   relabel_rules  = loki.relabel.journal.rules
-  forward_to     = [loki.write.local.receiver]
+  forward_to     = [loki.process.drop_noise.receiver]
+}
+
+// Nextcloud's apps read config keys they never declared in their own config
+// lexicon, and Nextcloud logs one info line per key per request for it. The
+// calendar app alone produced 13.7k lines a day, 98 % of the application log,
+// while changing nothing: the value is returned either way. Dropping them here
+// keeps every other info line, which the audit trail needs.
+loki.process "drop_noise" {
+  forward_to = [loki.write.local.receiver]
+
+  stage.drop {
+    expression          = ".*is not defined in the config lexicon.*"
+    drop_counter_reason = "nextcloud_config_lexicon"
+  }
 }
 
 loki.relabel "journal" {

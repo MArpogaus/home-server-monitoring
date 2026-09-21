@@ -37,6 +37,21 @@ CSTATE = ('{syslog_identifier="podman"} |~ `container (start|died|health_status)
 REBOOT_STATE = ('{unit="auto-reboot-staged.service"} |~ "No staged deployment|Staged deployment found|Blocked by"'
                 ' | label_format v=`{{ if contains "No staged" __line__ }}0'
                 '{{ else if contains "Blocked" __line__ }}2{{ else }}1{{ end }}`')
+# sshd, straight from its unit. journald strips the syslog prefix, so a line
+# starts at "Accepted" or "Connection closed"; the community SSH dashboards
+# (grafana.com 17514 and 21750) assume promtail on /var/log/auth.log and match
+# "sshd[", which never appears here.
+# BunkerWeb refuses a request with "[ACCESS] denied access from <reason> : ...,
+# client: <ip>" and bans a client with "[BADBEHAVIOR] IP <ip> is banned for <n>s".
+BW_DENY = ('{container="bunker-nginx"} |= "denied access"'
+           ' | regexp `denied access from (?P<reason>[a-z]+)`'
+           ' | regexp `client: (?P<ip>[0-9a-fA-F.:]+)`')
+BW_BAN = ('{container="bunker-nginx"} |= "is banned for"'
+          ' | regexp `IP (?P<ip>[0-9a-fA-F.:]+) is banned for`')
+SSHD = '{job="systemd-journal", unit="sshd.service"}'
+SSH_OK = SSHD + ' |= "Accepted" | pattern `Accepted <method> for <user> from <ip> port <_>`'
+SSH_BAD = (SSHD + ' |~ "Failed (password|publickey)|Invalid user|Connection closed by authenticating"'
+           ' | regexp `(?P<user>[^ ]+) (from )?(?P<ip>[0-9a-fA-F.:]+) port`')
 CSTATE_MAP = [(0, "stopped", "dark-red"), (1, "running", "blue"), (2, "starting", "yellow"),
               (3, "healthy", "green"), (4, "unhealthy", "red")]
 CLASS_COLORS = [("2xx", "green"), ("3xx", "blue"), ("4xx", "orange"), ("5xx", "red")]
@@ -289,6 +304,21 @@ P.append(panel("Temperatures", "timeseries", PROM, [prom("node_hwmon_temp_celsiu
     desc="Every hwmon sensor. The red line is the alert threshold."))
 P.append(panel("Processes", "timeseries", PROM, [prom("node_procs_running", "running"), prom("node_procs_blocked", "blocked on IO")], g, w=12, decimals=0, legend=("mean", "max"),
     desc="Blocked processes are waiting for disk; a steady count above zero matches io pressure above."))
+P.append(row("SSH", g))
+P.append(panel("Accepted and refused connections", "timeseries", LOKI, [
+    loki(f'sum(count_over_time({SSHD} |= "Accepted" [$__auto]))', "accepted"),
+    loki(f'sum(count_over_time({SSHD} |~ "Failed (password|publickey)|Invalid user|Connection closed by authenticating" [$__auto]))', "refused")], g, w=24, h=7,
+    decimals=0, bars=True, legend=("sum",),
+    overrides=[color("accepted", "green"), color("refused", "orange")],
+    desc="sshd only, from its own unit. SSH is LAN-only and accepts one hardware key, so 'refused' is usually a client that opened a connection and gave up (Connection closed by authenticating user), not an attack. Every accepted login also reaches the phone (SshLogin)."))
+P.append(top_bars("Accepted: who", f"topk(10, sum by (user) (count_over_time({SSH_OK} [$__range])))", "user", g,
+    desc="Users that logged in successfully over the dashboard range."))
+P.append(top_bars("Accepted: from where", f"topk(10, sum by (ip) (count_over_time({SSH_OK} [$__range])))", "ip", g,
+    desc="Source addresses of successful logins. Only LAN addresses should appear."))
+P.append(top_bars("Refused: from where", f"topk(10, sum by (ip) (count_over_time({SSH_BAD} [$__range])))", "ip", g,
+    desc="Source addresses of refused or abandoned connections. A stranger here means something on the LAN is probing, because the firewall does not publish port 22."))
+P.append(panel("sshd", "logs", LOKI, [loki(SSHD)], g, w=24, h=10,
+    desc="Everything sshd logged, unfiltered."))
 host = dashboard("host", "Host", ["home-server"], P, links=LINKS)
 
 # --------------------------------------------------------------------------- proxy
@@ -318,12 +348,13 @@ P.append(panel("Requests by site", "timeseries", LOKI, [loki(f"sum by (site) (ra
     desc="Access-log lines per second per server name. The ntfy site is the phone polling; everything else is Nextcloud."))
 P.append(panel("Responses by class", "timeseries", LOKI, [loki(f'sum by (class) (rate({BW} | label_format class="{{{{ .status | substr 0 1 }}}}xx" [$__auto]))', "{{class}}")], g, w=12, unit="reqps", stack=True, overrides=CLASS_OVERRIDES, legend=("mean", "max"),
     desc="2xx ok, 3xx redirects (HTTP to HTTPS, login), 4xx client errors and WAF denials, 5xx backend errors."))
-P.append(panel("Denied, WAF matches and bans", "timeseries", LOKI, [
-    loki('sum(count_over_time({container="bunker-nginx"} |= "denied access" [$__auto]))', "denied – BunkerWeb refused the request"),
-    loki('sum(count_over_time({container="bunker-nginx"} |= "ModSecurity" [$__auto]))', "modsecurity – a CRS rule matched"),
-    loki('sum(count_over_time({container="bunker-nginx"} |= "[BADBEHAVIOR]" |= "is banned for" [$__auto]))', "ban – client blocked for 24 h")], g, w=12, decimals=0, bars=True, legend=("sum",),
-    overrides=[color("denied – BunkerWeb refused the request", "orange"), color("modsecurity – a CRS rule matched", "yellow"), color("ban – client blocked for 24 h", "red")],
-    desc="Counts per interval. Denials come from the geo allowlist, the method filter, ModSecurity or the rate limit. Scanners produce a steady trickle; a burst from one address ends in a ban."))
+P.append(panel("Why requests were refused", "timeseries", LOKI, [
+    loki(f"sum by (reason) (count_over_time({BW_DENY} [$__auto]))", "{{reason}}"),
+    loki('sum(count_over_time({container="bunker-nginx"} |= "ModSecurity" [$__auto]))', "modsecurity"),
+    loki(f"sum(count_over_time({BW_BAN} [$__auto]))", "ban")], g, w=12, decimals=0, bars=True, stack=True, legend=("sum",),
+    overrides=[color("modsecurity", "yellow"), color("ban", "red"), color("country", "orange"),
+               color("dnsbl", "purple"), color("blacklist", "semi-dark-orange")],
+    desc="Every refusal by the check that made it: country (the geo allowlist), dnsbl (a public blocklist), blacklist (BunkerWeb's own), modsecurity (a CRS rule), ban (the client was already blocked). A burst from one address ends in a ban."))
 P.append(panel("Probe duration", "timeseries", PROM, [prom("probe_duration_seconds", "{{instance}}")], g, w=12, unit="s", decimals=2, legend=("mean", "max"),
     desc="Full request time of the blackbox probe including DNS and TLS handshake, once a minute. A step up means the backend or the WAF got slower."))
 
@@ -338,6 +369,10 @@ P.append(top_table("ModSecurity rules hit", LOKI, loki_instant('topk(10, sum by 
     desc="OWASP CRS rule ids over the dashboard range. 930130 is scanners probing /.env and friends; 920440 a blocked file extension; 949110 the anomaly-score block itself."))
 P.append(top_table("Responses by status", LOKI, loki_instant(f"sum by (status) (count_over_time({BW} [$__range]))"), g, w=8,
     desc="Exact status codes over the dashboard range."))
+P.append(top_table("Banned clients", LOKI, loki_instant(f"topk(10, sum by (ip) (count_over_time({BW_BAN} [$__range])))"), g, value="bans", w=8,
+    desc="Addresses BunkerWeb banned in the dashboard range, and how often. A ban lasts 24 h; `bwcli unban <ip>` in the scheduler container lifts one early."))
+P.append(top_table("Refused clients", LOKI, loki_instant(f"topk(10, sum by (ip, reason) (count_over_time({BW_DENY} [$__range])))"), g, value="refusals", w=8,
+    desc="Addresses that were refused, with the check that refused them."))
 P.append(top_table("Requests by site and method", LOKI, loki_instant(f"sum by (site, method) (count_over_time({BW} [$__range]))"), g, w=8,
     desc="PROPFIND and REPORT are WebDAV/CalDAV clients syncing."))
 
@@ -436,6 +471,9 @@ P.append(panel("Scheduled jobs", "timeseries", LOKI, [
     loki('sum by (unit) (count_over_time({unit=~"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service"} |~ "Failed with result" [$__auto]))', "{{unit}} FAILED")], g, w=24, h=8, decimals=0, bars=True, stack=True, legend=("sum",),
     overrides=[{"matcher": {"id": "byRegexp", "options": ".*FAILED"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}]}],
     desc="Snapshots daily, the database dump before the Nextcloud snapshot, the backup to the NAS nightly. A missing bar raises BackupMissing after 30 h."))
+
+P.append(top_table("Failed units", LOKI, loki_instant('topk(10, sum by (unit, user_unit) (count_over_time({syslog_identifier="systemd", user_unit!~"[0-9a-f]{64}-.*"} |~ "(?i)failed with result" [$__range])))'), g, value="failures", w=24, h=8,
+    desc="Which units produced the failure count above, system units by `unit` and container units by `user_unit`. A deploy restarting a pod is the usual source; anything else deserves the log below."))
 
 P.append(row("Logs", g))
 P.append(panel("Logins", "logs", LOKI, [loki('{unit="sshd.service"} |~ "Accepted publickey|Failed (publickey|password)|Invalid user" | regexp "(?P<what>Accepted publickey|Failed publickey|Failed password|Invalid user) (for )?(?P<user>[^ ]+) from (?P<ip>[0-9a-f.:]+)" | line_format "{{.what}}: {{.user}} from {{.ip}}"')], g, w=12, h=10,

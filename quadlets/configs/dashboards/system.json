@@ -911,17 +911,87 @@
       "id": 14
     },
     {
+      "title": "Failed units",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "topk(10, sum by (unit, user_unit) (count_over_time({syslog_identifier=\"systemd\", user_unit!~\"[0-9a-f]{64}-.*\"} |~ \"(?i)failed with result\" [$__range])))",
+          "legendFormat": "",
+          "queryType": "instant",
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "failures",
+            "desc": true
+          }
+        ],
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "description": "Which units produced the failure count above, system units by `unit` and container units by `user_unit`. A deploy restarting a pod is the usual source; anything else deserves the log below.",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "Value": "failures",
+              "Value #A": "failures"
+            }
+          }
+        }
+      ],
+      "id": 15
+    },
+    {
       "type": "row",
       "title": "Logs",
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 41,
+        "y": 49,
         "w": 24,
         "h": 1
       },
       "panels": [],
-      "id": 15
+      "id": 16
     },
     {
       "title": "Logins",
@@ -932,7 +1002,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 42,
+        "y": 50,
         "w": 12,
         "h": 10
       },
@@ -971,7 +1041,7 @@
         "prettifyLogMessage": false
       },
       "description": "Accepted and refused SSH logins with user and address.",
-      "id": 16
+      "id": 17
     },
     {
       "title": "Updates, reboots, boots",
@@ -982,7 +1052,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 42,
+        "y": 50,
         "w": 12,
         "h": 10
       },
@@ -1021,7 +1091,7 @@
         "prettifyLogMessage": false
       },
       "description": "rpm-ostree stages an OS update (UpdateStaged); auto-reboot-staged.timer reboots at night when one is staged and no backup holds an inhibitor (AutoReboot); 'Startup finished' is the boot (HostBooted).",
-      "id": 17
+      "id": 18
     },
     {
       "title": "Scheduled jobs",
@@ -1032,7 +1102,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 52,
+        "y": 60,
         "w": 12,
         "h": 9
       },
@@ -1071,7 +1141,7 @@
         "prettifyLogMessage": false
       },
       "description": "Backups, snapshots, the database dump, job unsticking and image updates: start, end and errors.",
-      "id": 18
+      "id": 19
     },
     {
       "title": "Image pulls",
@@ -1082,7 +1152,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 52,
+        "y": 60,
         "w": 12,
         "h": 9
       },
@@ -1121,7 +1191,7 @@
         "prettifyLogMessage": false
       },
       "description": "Every image podman fetched: a deploy with a new tag, or podman-auto-update following a tag's digest (ImagePulled).",
-      "id": 19
+      "id": 20
     },
     {
       "title": "SELinux denials and OOM kills",
@@ -1132,7 +1202,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 61,
+        "y": 69,
         "w": 24,
         "h": 9
       },
@@ -1171,7 +1241,7 @@
         "prettifyLogMessage": false
       },
       "description": "Raw audit and kernel lines. `scontext` names the confined domain; `comm` the program.",
-      "id": 20
+      "id": 21
     }
   ]
 }
