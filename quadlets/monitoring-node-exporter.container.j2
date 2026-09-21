@@ -9,3 +9,8 @@ PodmanArgs=--volume=/proc:/host/proc:ro --volume=/sys:/host/sys:ro --volume=/:/r
 # with the host's systemd control socket mounted. Unit state comes from the
 # journal instead (the System log dashboard derives it there).
 Exec=--path.procfs=/host/proc --path.sysfs=/host/sys --path.rootfs=/rootfs --collector.hwmon
+HealthCmd=wget -qO /dev/null http://127.0.0.1:9100/metrics
+HealthInterval=60s
+HealthStartPeriod=30s
+HealthOnFailure=kill
+Pod=monitoring.pod

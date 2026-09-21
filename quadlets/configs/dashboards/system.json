@@ -833,7 +833,7 @@
       },
       "targets": [
         {
-          "expr": "last_over_time({syslog_identifier=\"systemd\", unit=~\"btrfs-backup@.+\\\\.service|btrfs-snapshot@.+\\\\.service|pg-dumpall.service|unstick-jobs.service|podman-auto-update.service|auto-reboot-staged.service\"} |~ \"Starting |Deactivated successfully|Failed with result|Finished \" | regexp `(?P<ev>Starting|Deactivated successfully|Failed with result|Finished)` | label_format v=`{{ if eq .ev \"Starting\" }}1{{ else if eq .ev \"Failed with result\" }}2{{ else }}0{{ end }}` | unwrap v [$__auto]) by (unit)",
+          "expr": "last_over_time({syslog_identifier=\"systemd\", unit=~\"btrfs-backup@.+\\\\.service|btrfs-snapshot@.+\\\\.service|pg-dumpall.service|podman-auto-update.service|auto-reboot-staged.service\"} |~ \"Starting |Deactivated successfully|Failed with result|Finished \" | regexp `(?P<ev>Starting|Deactivated successfully|Failed with result|Finished)` | label_format v=`{{ if eq .ev \"Starting\" }}1{{ else if eq .ev \"Failed with result\" }}2{{ else }}0{{ end }}` | unwrap v [$__auto]) by (unit)",
           "legendFormat": "{{unit}}",
           "queryType": "range",
           "refId": "A",
@@ -1100,7 +1100,7 @@
       },
       "targets": [
         {
-          "expr": "{unit=~\"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service|unstick-jobs.service|podman-auto-update.service\"} |~ \"Deactivated successfully|Failed with result|run complete|Starting|error|Error\"",
+          "expr": "{unit=~\"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service|podman-auto-update.service\"} |~ \"Deactivated successfully|Failed with result|run complete|Starting|error|Error\"",
           "legendFormat": "",
           "queryType": "range",
           "refId": "A",
@@ -1132,7 +1132,7 @@
         "enableLogDetails": true,
         "prettifyLogMessage": false
       },
-      "description": "Backups, snapshots, the database dump, job unsticking and image updates: start, end and errors.",
+      "description": "Backups, snapshots, the database dump and image updates: start, end and errors.",
       "id": 19
     },
     {

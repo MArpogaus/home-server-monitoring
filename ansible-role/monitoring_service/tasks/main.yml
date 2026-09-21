@@ -41,9 +41,12 @@
   when: monitoring_service_grafana_admin_password | length > 0
   no_log: true
 
+# --password-from-stdin, so the value never reaches /proc/<pid>/cmdline.
 - name: Set the Grafana admin password
   ansible.builtin.command:
-    cmd: podman exec monitoring-grafana grafana cli admin reset-admin-password {{ monitoring_service_grafana_admin_password | quote }}
+    cmd: podman exec -i monitoring-grafana grafana cli admin reset-admin-password --password-from-stdin
+    stdin: "{{ monitoring_service_grafana_admin_password }}"
+    stdin_add_newline: false
   become: true
   become_user: "{{ service_user }}"
   when:

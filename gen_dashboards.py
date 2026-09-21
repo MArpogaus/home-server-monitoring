@@ -58,7 +58,7 @@ BW_BAN = ('{container="bunker-nginx"} |= "is banned for"'
 # successfully" or "Failed with result". Turned into a number and carried
 # forward, that is a band per job: when it ran, how long, how it ended.
 JOBS = ('{syslog_identifier="systemd", unit=~"btrfs-backup@.+\\\\.service|btrfs-snapshot@.+\\\\.service'
-        '|pg-dumpall.service|unstick-jobs.service|podman-auto-update.service|auto-reboot-staged.service"}'
+        '|pg-dumpall.service|podman-auto-update.service|auto-reboot-staged.service"}'
         ' |~ "Starting |Deactivated successfully|Failed with result|Finished "'
         ' | regexp `(?P<ev>Starting|Deactivated successfully|Failed with result|Finished)`'
         ' | label_format v=`{{ if eq .ev "Starting" }}1{{ else if eq .ev "Failed with result" }}2{{ else }}0{{ end }}`')
@@ -503,8 +503,8 @@ P.append(panel("Logins", "logs", LOKI, [loki('{unit="sshd.service"} |~ "Accepted
     desc="Accepted and refused SSH logins with user and address."))
 P.append(panel("Updates, reboots, boots", "logs", LOKI, [loki('{unit=~"rpm-ostreed.service|auto-reboot-staged.service|init.scope"} |~ "Staged|Deployment|Rebooting|Startup finished|reboot|No staged deployment"')], g, w=12, h=10,
     desc="rpm-ostree stages an OS update (UpdateStaged); auto-reboot-staged.timer reboots at night when one is staged and no backup holds an inhibitor (AutoReboot); 'Startup finished' is the boot (HostBooted)."))
-P.append(panel("Scheduled jobs", "logs", LOKI, [loki('{unit=~"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service|unstick-jobs.service|podman-auto-update.service"} |~ "Deactivated successfully|Failed with result|run complete|Starting|error|Error"')], g, w=12, h=9,
-    desc="Backups, snapshots, the database dump, job unsticking and image updates: start, end and errors."))
+P.append(panel("Scheduled jobs", "logs", LOKI, [loki('{unit=~"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service|podman-auto-update.service"} |~ "Deactivated successfully|Failed with result|run complete|Starting|error|Error"')], g, w=12, h=9,
+    desc="Backups, snapshots, the database dump and image updates: start, end and errors."))
 P.append(panel("Image pulls", "logs", LOKI, [loki('{syslog_identifier="podman"} |= "Trying to pull"')], g, w=12, h=9,
     desc="Every image podman fetched: a deploy with a new tag, or podman-auto-update following a tag's digest (ImagePulled)."))
 P.append(panel("SELinux denials and OOM kills", "logs", LOKI, [loki(AVC)], g, w=24, h=9,

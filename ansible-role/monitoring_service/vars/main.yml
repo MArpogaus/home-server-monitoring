@@ -1,0 +1,5 @@
+---
+# Read by the user's systemd manager, not by a container, so 0600 costs nothing.
+# alertmanager.yaml stays 0644 on purpose: README.md, "File modes".
+quadlet_service_config_modes:
+  ntfy-auth.env: '0600'

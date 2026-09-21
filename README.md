@@ -160,7 +160,6 @@ reads what was posted, 72 hours back.
 
 ### When alerts do not arrive
 
-`monitoring_service_ntfy_url` empty means alerts are evaluated and discarded.
 Confirm the rules loaded and the route exists:
 
 ```bash
