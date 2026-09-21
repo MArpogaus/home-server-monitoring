@@ -21,6 +21,10 @@ NCLOG = '{syslog_identifier="nextcloud"} | json'
 # BunkerWeb access log: <site> <ip> - <reqid> - [time] "<method> <uri> <proto>" <status> <bytes> "<referer>" "<ua>"
 BW = ('{container="bunker-nginx"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != "bwapi"'
       ' | pattern `<site> <ip> - <_> - [<_>] "<method> <uri> <_>" <status> <bytes> "<_>" "<ua>"` | status =~ "[0-9]+"')
+# Enforced SELinux denials and OOM kills, without pasta's harmless capability
+# probes at every pod start. loki-rules.yaml carries the same filter.
+AVC = ('{syslog_identifier=~"audit|kernel"} |~ "avc:  denied|Killed process"'
+       ' != "permissive=1" != "comm=\\"pasta"')
 CLASS_COLORS = [("2xx", "green"), ("3xx", "blue"), ("4xx", "orange"), ("5xx", "red")]
 DISK = 'device!~"loop.*|dm-.*|sr.*|zram.*"'
 NIC = 'device!~"lo|veth.*|podman.*|pasta.*|tap.*"'
@@ -372,7 +376,7 @@ P.append(panel("SSH logins (24h)", "stat", LOKI, [loki_instant('sum(count_over_t
     desc="Accepted key logins. Each one also reaches the phone (SshLogin)."))
 P.append(panel("SSH failures (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({unit="sshd.service"} |~ "Invalid user|Failed (publickey|password)" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "orange")], sparkline=False,
     desc="SSH is LAN-only, so anything here is a device on the LAN or a typo."))
-P.append(panel("SELinux denials (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="audit"} |= "avc:  denied" != "permissive=1" != "comm=\\"pasta" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (20, "orange")], sparkline=False,
+P.append(panel("SELinux denials (24h)", "stat", LOKI, [loki_instant(f'sum(count_over_time({AVC} |= "avc:  denied" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (20, "orange")], sparkline=False,
     desc="Enforced denials only, without pasta's capability probes at every pod start (harmless, excluded from the alert too)."))
 P.append(panel("OOM kills (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="kernel"} |= "Killed process" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=ZERO_IS_GOOD, sparkline=False,
     desc="Processes the kernel killed for hitting a container's memory ceiling. The OomKill alert names the process."))
@@ -394,7 +398,7 @@ P.append(panel("Scheduled jobs", "timeseries", LOKI, [
     loki('sum by (unit) (count_over_time({unit=~"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service"} |= "Deactivated successfully" [$__auto]))', "{{unit}} finished"),
     loki('sum by (unit) (count_over_time({unit=~"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service"} |~ "Failed with result" [$__auto]))', "{{unit}} FAILED")], g, w=12, h=9, decimals=0, bars=True, stack=True, legend=("sum",),
     overrides=[{"matcher": {"id": "byRegexp", "options": ".*FAILED"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}]}],
-    desc="Snapshots hourly, the database dump before the Nextcloud snapshot, the backup to the NAS nightly. A missing bar raises BackupMissing after 30 h."))
+    desc="Snapshots daily, the database dump before the Nextcloud snapshot, the backup to the NAS nightly. A missing bar raises BackupMissing after 30 h."))
 
 P.append(row("Logs", g))
 P.append(panel("Container state changes", "logs", LOKI, [loki('{syslog_identifier="systemd", user_unit=~"(nextcloud|bunker|monitoring|nc|proxy)-.*"} |~ "Started|Stopped|Failed with result|Scheduled restart|Main process exited" | line_format "{{.user_unit}}: {{ __line__ }}"')], g, w=12, h=10,
@@ -405,7 +409,7 @@ P.append(panel("Updates, reboots, boots", "logs", LOKI, [loki('{unit=~"rpm-ostre
     desc="rpm-ostree stages an OS update (UpdateStaged); auto-reboot-staged.timer reboots at night when one is staged and no backup holds an inhibitor (AutoReboot); 'Startup finished' is the boot (HostBooted)."))
 P.append(panel("Scheduled jobs", "logs", LOKI, [loki('{unit=~"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service|unstick-jobs.service|podman-auto-update.service"} |~ "Deactivated successfully|Failed with result|run complete|Starting|error|Error"')], g, w=12, h=9,
     desc="Backups, snapshots, the database dump, job unsticking and image updates: start, end and errors."))
-P.append(panel("SELinux denials and OOM kills", "logs", LOKI, [loki('{syslog_identifier=~"audit|kernel"} |~ "avc:  denied|Killed process" != "permissive=1" != "comm=\\"pasta"')], g, w=12, h=9,
+P.append(panel("SELinux denials and OOM kills", "logs", LOKI, [loki(AVC)], g, w=12, h=9,
     desc="Raw audit and kernel lines. `scontext` names the confined domain; `comm` the program."))
 P.append(panel("Image pulls", "logs", LOKI, [loki('{syslog_identifier="podman"} |= "Trying to pull"')], g, w=12, h=9,
     desc="Every image podman fetched: a deploy with a new tag, or podman-auto-update following a tag's digest (ImagePulled)."))

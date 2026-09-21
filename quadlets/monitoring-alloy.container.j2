@@ -17,12 +17,4 @@ Volume=/etc/machine-id:/etc/machine-id:ro
 # :U chowns the volume to the image's user on each start.
 Volume=alloy-data:/var/lib/alloy/data:U
 PodmanArgs={{ monitoring_service_alloy_extra_args }}
-AutoUpdate={{ monitoring_service_auto_update }}
 Pod=monitoring.pod
-
-[Service]
-Restart=on-failure
-RestartSec=10s
-
-[Install]
-WantedBy=default.target

@@ -86,8 +86,7 @@ its WAL and needs some minutes before `/ready` answers.
 Two sources, one delivery path. Prometheus rules cover the host. Loki rules
 read the journal Alloy already ships, so there is no podman exporter. Both go
 to Alertmanager, which delivers to ntfy in this pod. Alerts reach no third party.
-Set `monitoring_service_ntfy_url` to a hosted topic to change that, or empty
-to evaluate and discard. ntfy caches the topic in a volume for 72 h, so a
+Set `monitoring_service_ntfy_url` to a hosted topic to change that. ntfy caches the topic in a volume for 72 h, so a
 phone that was offline catches up and a reboot keeps the history.
 
 Two kinds share the topic. **States** fire, repeat every 12 h and send a
@@ -165,7 +164,7 @@ reads what was posted, 72 hours back.
 Confirm the rules loaded and the route exists:
 
 ```bash
-curl -s http://127.0.0.2:3100/loki/api/v1/rules | grep -c 'alert:'      # 18
+curl -s http://127.0.0.2:3100/loki/api/v1/rules | grep -c 'alert:'
 curl -s http://127.0.0.2:9090/api/v1/rules | head
 curl -s -G http://127.0.0.2:3100/loki/api/v1/label/job/values          # systemd-journal
 podman exec monitoring-alertmanager amtool --alertmanager.url=http://127.0.0.1:9093 alert query
@@ -184,14 +183,22 @@ podman exec monitoring-alertmanager amtool --alertmanager.url=http://127.0.0.1:9
 |---|---|---|
 | `monitoring_service_*_image` | see `defaults/main.yml` | Pinned image tags |
 | `monitoring_service_*_extra_args` | `--memory=...` | Per-container ceilings (8 GB host) |
-| `monitoring_service_ntfy_url` | ntfy in the pod | Alertmanager's target; empty discards alerts |
+| `monitoring_service_ntfy_url` | ntfy in the pod | Alertmanager's target; loopback on purpose, so alerts arrive when the proxy is down |
 | `monitoring_service_ntfy_base_url` | loopback | The address the phone uses |
-| `monitoring_service_auto_update` | `registry` | Podman auto-update |
-| `monitoring_service_grafana_max_conns` | `2` | Grafana datasource proxy conns |
 | `monitoring_service_grafana_admin_password` | `""` | Set it: the proxy pod can reach Grafana, and empty leaves `admin/admin` |
 | `monitoring_service_probe_urls` | `[]` | Public URLs the blackbox exporter probes every minute; 2xx passes |
 | `monitoring_service_ntfy_user` / `_password` | `ntfy` / required | The phone's login |
 | `monitoring_service_ntfy_token` | required | Alertmanager's and deploy.sh's bearer token (`tk_` + 29 lowercase alphanumerics) |
+
+### File modes
+
+`nextcloud` and `bunker` template their environment files `0600`; this repo
+does not, and that is deliberate. An `EnvironmentFile` is read by the user's
+systemd manager, so `0600` costs nothing. `alertmanager.yaml` carries the ntfy
+token but is bind-mounted into a container that runs as `nobody`, which maps
+to a subuid outside the service user: `0600` makes it unreadable and
+Alertmanager exits. The service home is `0750`, so only this user and root
+reach either file.
 
 ## Role contract
 

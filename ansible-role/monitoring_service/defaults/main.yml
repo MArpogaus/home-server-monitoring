@@ -1,5 +1,4 @@
 ---
-monitoring_service_auto_update: "registry"
 
 # Pinned tags; AutoUpdate=registry follows digest changes of the tag.
 monitoring_service_grafana_image: "docker.io/grafana/grafana:13.2.2"
@@ -22,7 +21,6 @@ monitoring_service_blackbox_extra_args: "--memory=64M"
 # Public URLs probed from the host every minute (DNS, TLS, WAF, backend).
 monitoring_service_probe_urls: []
 
-monitoring_service_grafana_max_conns: "2"
 # Empty leaves Grafana at admin/admin, which the proxy pod can reach.
 monitoring_service_grafana_admin_password: ""
 

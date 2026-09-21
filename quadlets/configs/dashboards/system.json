@@ -347,7 +347,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({syslog_identifier=\"audit\"} |= \"avc:  denied\" != \"permissive=1\" != \"comm=\\\"pasta\" [24h])) or vector(0)",
+          "expr": "sum(count_over_time({syslog_identifier=~\"audit|kernel\"} |~ \"avc:  denied|Killed process\" != \"permissive=1\" != \"comm=\\\"pasta\" |= \"avc:  denied\" [24h])) or vector(0)",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -812,7 +812,7 @@
           "sort": "desc"
         }
       },
-      "description": "Snapshots hourly, the database dump before the Nextcloud snapshot, the backup to the NAS nightly. A missing bar raises BackupMissing after 30 h.",
+      "description": "Snapshots daily, the database dump before the Nextcloud snapshot, the backup to the NAS nightly. A missing bar raises BackupMissing after 30 h.",
       "id": 12
     },
     {

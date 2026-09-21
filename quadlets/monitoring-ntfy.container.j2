@@ -21,15 +21,7 @@ Environment=NTFY_AUTH_TOKENS={{ monitoring_service_ntfy_user }}:{{ monitoring_se
 Volume=ntfy-data:/var/lib/ntfy:Z
 Exec=serve
 PodmanArgs={{ monitoring_service_ntfy_extra_args }}
-AutoUpdate={{ monitoring_service_auto_update }}
 HealthCmd=wget -qO /dev/null http://127.0.0.1:8081/v1/health
 HealthInterval=60s
 HealthStartPeriod=30s
 Pod=monitoring.pod
-
-[Service]
-Restart=on-failure
-RestartSec=10s
-
-[Install]
-WantedBy=default.target

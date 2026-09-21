@@ -1,7 +1,8 @@
 [Container]
 Image={{ monitoring_service_grafana_image }}
 ContainerName=monitoring-grafana
-Environment=GF_DATAPROXY_MAX_CONNS_PER_HOST={{ monitoring_service_grafana_max_conns }}
+# Two cores, one browser: more connections only queue deeper in Grafana.
+Environment=GF_DATAPROXY_MAX_CONNS_PER_HOST=2
 Environment=GF_AUTH_ANONYMOUS_ENABLED=false
 {% if monitoring_service_grafana_admin_password %}
 Environment=GF_SECURITY_ADMIN_PASSWORD={{ monitoring_service_grafana_admin_password }}
@@ -11,16 +12,8 @@ Volume=./configs/grafana-dashboards.yaml:/etc/grafana/provisioning/dashboards/da
 Volume=./configs/dashboards/:/etc/grafana/provisioning/dashboards/home-server/:Z
 Volume=grafana-data:/var/lib/grafana:Z
 PodmanArgs={{ monitoring_service_grafana_extra_args }}
-AutoUpdate={{ monitoring_service_auto_update }}
 HealthCmd=wget -qO /dev/null http://127.0.0.1:3000/api/health
 HealthInterval=60s
 HealthStartPeriod=60s
 HealthOnFailure=kill
 Pod=monitoring.pod
-
-[Service]
-Restart=on-failure
-RestartSec=10s
-
-[Install]
-WantedBy=default.target

@@ -6,12 +6,4 @@ Volume=./configs/loki.yaml:/etc/loki/local-config.yaml:Z
 Volume=./configs/loki-rules.yaml:/etc/loki/rules/fake/rules.yaml:Z
 Volume=loki-data:/loki:Z
 PodmanArgs={{ monitoring_service_loki_extra_args }}
-AutoUpdate={{ monitoring_service_auto_update }}
 Pod=monitoring.pod
-
-[Service]
-Restart=on-failure
-RestartSec=10s
-
-[Install]
-WantedBy=default.target
