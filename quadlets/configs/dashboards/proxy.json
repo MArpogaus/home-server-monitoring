@@ -72,18 +72,6 @@
         "expr": "{job=\"systemd-journal\", unit=\"init.scope\"} |= \"Startup finished in\"",
         "titleFormat": "Boot",
         "textFormat": "Startup finished"
-      },
-      {
-        "datasource": {
-          "type": "loki",
-          "uid": "loki"
-        },
-        "enable": true,
-        "iconColor": "blue",
-        "name": "Deploys",
-        "expr": "{syslog_identifier=\"systemd\", user_unit=\"nc-pod.service\"} |= \"Started\"",
-        "titleFormat": "Deploy",
-        "textFormat": "Nextcloud pod started"
       }
     ]
   },
@@ -111,7 +99,7 @@
       "gridPos": {
         "x": 0,
         "y": 1,
-        "w": 8,
+        "w": 12,
         "h": 4
       },
       "targets": [
@@ -184,9 +172,9 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "x": 8,
+        "x": 12,
         "y": 1,
-        "w": 4,
+        "w": 6,
         "h": 4
       },
       "targets": [
@@ -247,9 +235,9 @@
         "uid": "loki"
       },
       "gridPos": {
-        "x": 12,
+        "x": 18,
         "y": 1,
-        "w": 3,
+        "w": 6,
         "h": 4
       },
       "targets": [
@@ -304,9 +292,9 @@
         "uid": "loki"
       },
       "gridPos": {
-        "x": 15,
-        "y": 1,
-        "w": 3,
+        "x": 0,
+        "y": 5,
+        "w": 8,
         "h": 4
       },
       "targets": [
@@ -361,9 +349,9 @@
         "uid": "loki"
       },
       "gridPos": {
-        "x": 18,
-        "y": 1,
-        "w": 3,
+        "x": 8,
+        "y": 5,
+        "w": 8,
         "h": 4
       },
       "targets": [
@@ -419,9 +407,9 @@
         "uid": "loki"
       },
       "gridPos": {
-        "x": 21,
-        "y": 1,
-        "w": 3,
+        "x": 16,
+        "y": 5,
+        "w": 8,
         "h": 4
       },
       "targets": [
@@ -474,12 +462,93 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 5,
+        "y": 9,
         "w": 24,
         "h": 1
       },
       "panels": [],
       "id": 8
+    },
+    {
+      "title": "Public URLs over time",
+      "type": "state-timeline",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 5
+      },
+      "targets": [
+        {
+          "expr": "probe_success",
+          "legendFormat": "{{instance}}",
+          "range": true,
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mergeValues": true,
+        "showValue": "never",
+        "rowHeight": 0.9,
+        "alignValue": "left",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "description": "One band per probed URL, once a minute. A gap means the probe itself did not run; red means DNS, TLS, the WAF or the backend failed.",
+      "id": 9
     },
     {
       "title": "Requests by site",
@@ -490,7 +559,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 6,
+        "y": 15,
         "w": 12,
         "h": 8
       },
@@ -545,7 +614,7 @@
         }
       },
       "description": "Access-log lines per second per server name. The ntfy site is the phone polling; everything else is Nextcloud.",
-      "id": 9
+      "id": 10
     },
     {
       "title": "Responses by class",
@@ -556,7 +625,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 6,
+        "y": 15,
         "w": 12,
         "h": 8
       },
@@ -672,7 +741,7 @@
         }
       },
       "description": "2xx ok, 3xx redirects (HTTP to HTTPS, login), 4xx client errors and WAF denials, 5xx backend errors.",
-      "id": 10
+      "id": 11
     },
     {
       "title": "Denied, WAF matches and bans",
@@ -683,7 +752,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 14,
+        "y": 23,
         "w": 12,
         "h": 8
       },
@@ -801,7 +870,7 @@
         }
       },
       "description": "Counts per interval. Denials come from the geo allowlist, the method filter, ModSecurity or the rate limit. Scanners produce a steady trickle; a burst from one address ends in a ban.",
-      "id": 11
+      "id": 12
     },
     {
       "title": "Probe duration",
@@ -812,7 +881,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 14,
+        "y": 23,
         "w": 12,
         "h": 8
       },
@@ -865,7 +934,7 @@
         }
       },
       "description": "Full request time of the blackbox probe including DNS and TLS handshake, once a minute. A step up means the backend or the WAF got slower.",
-      "id": 12
+      "id": 13
     },
     {
       "type": "row",
@@ -873,12 +942,12 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 22,
+        "y": 31,
         "w": 24,
         "h": 1
       },
       "panels": [],
-      "id": 13
+      "id": 14
     },
     {
       "title": "Top clients",
@@ -889,7 +958,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 23,
+        "y": 32,
         "w": 8,
         "h": 9
       },
@@ -918,7 +987,22 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ip"
+            },
+            "properties": [
+              {
+                "id": "custom",
+                "value": {
+                  "width": 260
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "sortBy": [
@@ -948,7 +1032,7 @@
           }
         }
       ],
-      "id": 14
+      "id": 15
     },
     {
       "title": "Top paths",
@@ -959,7 +1043,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 23,
+        "y": 32,
         "w": 8,
         "h": 9
       },
@@ -988,7 +1072,22 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "uri"
+            },
+            "properties": [
+              {
+                "id": "custom",
+                "value": {
+                  "width": 260
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "sortBy": [
@@ -1018,7 +1117,7 @@
           }
         }
       ],
-      "id": 15
+      "id": 16
     },
     {
       "title": "Top user agents",
@@ -1029,7 +1128,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 23,
+        "y": 32,
         "w": 8,
         "h": 9
       },
@@ -1058,7 +1157,22 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ua"
+            },
+            "properties": [
+              {
+                "id": "custom",
+                "value": {
+                  "width": 260
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "sortBy": [
@@ -1088,7 +1202,7 @@
           }
         }
       ],
-      "id": 16
+      "id": 17
     },
     {
       "title": "ModSecurity rules hit",
@@ -1099,7 +1213,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 32,
+        "y": 41,
         "w": 8,
         "h": 9
       },
@@ -1158,7 +1272,7 @@
           }
         }
       ],
-      "id": 17
+      "id": 18
     },
     {
       "title": "Responses by status",
@@ -1169,7 +1283,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 32,
+        "y": 41,
         "w": 8,
         "h": 9
       },
@@ -1228,7 +1342,7 @@
           }
         }
       ],
-      "id": 18
+      "id": 19
     },
     {
       "title": "Requests by site and method",
@@ -1239,7 +1353,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 32,
+        "y": 41,
         "w": 8,
         "h": 9
       },
@@ -1298,7 +1412,7 @@
           }
         }
       ],
-      "id": 19
+      "id": 20
     },
     {
       "type": "row",
@@ -1306,12 +1420,12 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 41,
+        "y": 50,
         "w": 24,
         "h": 1
       },
       "panels": [],
-      "id": 20
+      "id": 21
     },
     {
       "title": "Bans and denials",
@@ -1322,7 +1436,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 42,
+        "y": 51,
         "w": 12,
         "h": 10
       },
@@ -1361,7 +1475,7 @@
         "prettifyLogMessage": false
       },
       "description": "Every refused request and every ban, newest first. If your own address appears, `bwcli unban <ip>` in the bunker-scheduler container lifts it.",
-      "id": 21
+      "id": 22
     },
     {
       "title": "Errors and certificate events",
@@ -1372,7 +1486,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 42,
+        "y": 51,
         "w": 12,
         "h": 10
       },
@@ -1411,7 +1525,7 @@
         "prettifyLogMessage": false
       },
       "description": "nginx errors and the scheduler's certificate work. A renewal appears here once a month; an error line raises CertificateRenewalFailed.",
-      "id": 22
+      "id": 23
     }
   ]
 }

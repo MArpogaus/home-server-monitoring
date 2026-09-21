@@ -72,18 +72,6 @@
         "expr": "{job=\"systemd-journal\", unit=\"init.scope\"} |= \"Startup finished in\"",
         "titleFormat": "Boot",
         "textFormat": "Startup finished"
-      },
-      {
-        "datasource": {
-          "type": "loki",
-          "uid": "loki"
-        },
-        "enable": true,
-        "iconColor": "blue",
-        "name": "Deploys",
-        "expr": "{syslog_identifier=\"systemd\", user_unit=\"nc-pod.service\"} |= \"Started\"",
-        "titleFormat": "Deploy",
-        "textFormat": "Nextcloud pod started"
       }
     ]
   },
@@ -102,7 +90,7 @@
       "id": 1
     },
     {
-      "title": "Requests / min",
+      "title": "Requests/min",
       "type": "stat",
       "datasource": {
         "type": "loki",
@@ -159,7 +147,7 @@
       "id": 2
     },
     {
-      "title": "p95 response time",
+      "title": "p95 latency",
       "type": "stat",
       "datasource": {
         "type": "loki",
@@ -281,7 +269,7 @@
       "id": 4
     },
     {
-      "title": "Failed logins (24h)",
+      "title": "Failed logins",
       "type": "stat",
       "datasource": {
         "type": "loki",
@@ -343,7 +331,7 @@
       "id": 5
     },
     {
-      "title": "App warnings+ (24h)",
+      "title": "App warnings",
       "type": "stat",
       "datasource": {
         "type": "loki",
@@ -401,7 +389,7 @@
       "id": 6
     },
     {
-      "title": "php-fpm at max children (24h)",
+      "title": "php-fpm maxed",
       "type": "stat",
       "datasource": {
         "type": "loki",
@@ -889,7 +877,22 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "path"
+            },
+            "properties": [
+              {
+                "id": "custom",
+                "value": {
+                  "width": 260
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "sortBy": [
@@ -959,7 +962,22 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "addr"
+            },
+            "properties": [
+              {
+                "id": "custom",
+                "value": {
+                  "width": 260
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "sortBy": [

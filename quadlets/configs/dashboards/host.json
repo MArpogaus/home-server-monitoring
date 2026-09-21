@@ -72,18 +72,6 @@
         "expr": "{job=\"systemd-journal\", unit=\"init.scope\"} |= \"Startup finished in\"",
         "titleFormat": "Boot",
         "textFormat": "Startup finished"
-      },
-      {
-        "datasource": {
-          "type": "loki",
-          "uid": "loki"
-        },
-        "enable": true,
-        "iconColor": "blue",
-        "name": "Deploys",
-        "expr": "{syslog_identifier=\"systemd\", user_unit=\"nc-pod.service\"} |= \"Started\"",
-        "titleFormat": "Deploy",
-        "textFormat": "Nextcloud pod started"
       }
     ]
   },

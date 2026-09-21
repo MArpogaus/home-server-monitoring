@@ -25,6 +25,20 @@ BW = ('{container="bunker-nginx"} |~ `^[A-Za-z0-9.-]+ [0-9a-fA-F.:]+ - ` != "bwa
 # probes at every pod start. loki-rules.yaml carries the same filter.
 AVC = ('{syslog_identifier=~"audit|kernel"} |~ "avc:  denied|Killed process"'
        ' != "permissive=1" != "comm=\\"pasta"')
+# One value per container from podman's event log: 0 stopped, 1 running without
+# a health check, 2 health check starting, 3 healthy, 4 unhealthy. last_over_time
+# plus spanNulls turns it into a state that holds until the next event.
+CSTATE = ('{syslog_identifier="podman"} |~ `container (start|died|health_status) `'
+          ' | regexp `container (?P<ev>start|died|health_status) `'
+          ' | regexp `name=(?P<c>[a-zA-Z0-9_.-]+)` | c =~ `(nc|proxy|monitoring|nextcloud|bunker)-[a-z-]+`'
+          ' | label_format hs=`{{ regexReplaceAll "^.*health_status=([a-z]+).*$" __line__ "${1}" }}`'
+          ' | label_format v=`{{ if eq .ev "died" }}0{{ else if eq .ev "start" }}1'
+          '{{ else if eq .hs "healthy" }}3{{ else if eq .hs "unhealthy" }}4{{ else }}2{{ end }}`')
+REBOOT_STATE = ('{unit="auto-reboot-staged.service"} |~ "No staged deployment|Staged deployment found|Blocked by"'
+                ' | label_format v=`{{ if contains "No staged" __line__ }}0'
+                '{{ else if contains "Blocked" __line__ }}2{{ else }}1{{ end }}`')
+CSTATE_MAP = [(0, "stopped", "dark-red"), (1, "running", "blue"), (2, "starting", "yellow"),
+              (3, "healthy", "green"), (4, "unhealthy", "red")]
 CLASS_COLORS = [("2xx", "green"), ("3xx", "blue"), ("4xx", "orange"), ("5xx", "red")]
 DISK = 'device!~"loop.*|dm-.*|sr.*|zram.*"'
 NIC = 'device!~"lo|veth.*|podman.*|pasta.*|tap.*"'
@@ -137,16 +151,36 @@ def panel(title, ptype, ds, targets, grid, w=12, h=8, unit=None, opts=None, over
                              "dedupStrategy": "none", "enableLogDetails": True, "prettifyLogMessage": False})
     if ptype == "table":
         p["options"].update({"showHeader": True, "cellHeight": "sm", "footer": {"show": False}})
+    if ptype == "state-timeline":
+        d.setdefault("custom", {}).update({"fillOpacity": 80, "lineWidth": 0, "spanNulls": True})
+        p["options"].update({"mergeValues": True, "showValue": "never", "rowHeight": 0.9,
+                             "alignValue": "left",
+                             "legend": {"displayMode": "list", "placement": "bottom", "showLegend": True},
+                             "tooltip": {"mode": "single", "sort": "none"}})
+    if ptype == "bargauge":
+        p["options"].update({"displayMode": "gradient", "orientation": "horizontal",
+                             "valueMode": "text", "showUnfilled": True, "minVizWidth": 8,
+                             "minVizHeight": 12, "namePlacement": "left", "sizing": "auto",
+                             "reduceOptions": {"calcs": ["lastNotNull"], "fields": ""}})
     return p
 
 
-def top_table(title, ds, target, grid, value="requests", w=8, h=9, desc=None, overrides=None, mappings=None):
+def top_table(title, ds, target, grid, value="requests", w=8, h=9, desc=None, overrides=None,
+              mappings=None):
     """Instant top-k query as a table: the useless Time column hidden, the value column named."""
     t = [{"id": "organize", "options": {"excludeByName": {"Time": True},
                                         "renameByName": {"Value": value, "Value #A": value}}}]
     return panel(title, "table", ds, [target], grid, w=w, h=h, desc=desc, transformations=t,
                  opts={"sortBy": [{"displayName": value, "desc": True}]}, decimals=0,
-                 overrides=overrides, mappings=mappings)
+                 overrides=list(overrides or []), mappings=mappings)
+
+
+def top_bars(title, expr, label, grid, w=8, h=9, desc=None):
+    """Top-k as a sorted table. A bargauge draws one bar for a Loki instant
+    vector, because it arrives as a single frame, and a gauge table cell needs
+    a field config the Loki frame does not carry."""
+    return top_table(title, LOKI, loki_instant(expr), grid, w=w, h=h, desc=desc,
+                     overrides=[by_name(label, custom={"width": 260})])
 
 
 def prom(expr, legend=""):
@@ -192,9 +226,6 @@ def dashboard(uid, title, tags, panels, refresh="1m", time_from="now-24h", links
             {"datasource": LOKI, "enable": True, "iconColor": "red", "name": "Boots",
              "expr": '{job="systemd-journal", unit="init.scope"} |= "Startup finished in"',
              "titleFormat": "Boot", "textFormat": "Startup finished"},
-            {"datasource": LOKI, "enable": True, "iconColor": "blue", "name": "Deploys",
-             "expr": '{syslog_identifier="systemd", user_unit="nc-pod.service"} |= "Started"',
-             "titleFormat": "Deploy", "textFormat": "Nextcloud pod started"},
         ]},
         "panels": panels,
     }
@@ -263,23 +294,26 @@ host = dashboard("host", "Host", ["home-server"], P, links=LINKS)
 # --------------------------------------------------------------------------- proxy
 g = Grid()
 P = [row("Now", g)]
-P.append(panel("Public URLs", "stat", PROM, [prom("probe_success", "{{instance}}")], g, w=8, h=4, decimals=0, sparkline=False,
+P.append(panel("Public URLs", "stat", PROM, [prom("probe_success", "{{instance}}")], g, w=12, h=4, decimals=0, sparkline=False,
     mappings=[(1, "UP", "green"), (0, "DOWN", "red")], thresholds=[(None, "red"), (1, "green")],
     opts={"colorMode": "background", "textMode": "value_and_name", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": ""}},
     desc="Blackbox probe from this host through the public path: DNS, TLS (validated), BunkerWeb and the backend. PublicUrlDown fires after 5 min."))
-P.append(panel("Certificate expires in", "stat", PROM, [prom("min((probe_ssl_earliest_cert_expiry - time()) / 86400)")], g, w=4, h=4, unit="suffix: days", decimals=0, sparkline=False,
+P.append(panel("Certificate expires in", "stat", PROM, [prom("min((probe_ssl_earliest_cert_expiry - time()) / 86400)")], g, w=6, h=4, unit="suffix: days", decimals=0, sparkline=False,
     thresholds=[(None, "red"), (14, "orange"), (30, "green")],
     desc="Shortest remaining validity over all probed sites. Let's Encrypt renews at 30 days; CertificateExpiresSoon fires below 14."))
-P.append(panel("Requests / min", "stat", LOKI, [loki_instant(f"sum(count_over_time({BW} [1h])) / 60")], g, w=3, h=4, decimals=1, color="fixed", sparkline=False,
+P.append(panel("Requests / min", "stat", LOKI, [loki_instant(f"sum(count_over_time({BW} [1h])) / 60")], g, w=6, h=4, decimals=1, color="fixed", sparkline=False,
     desc="Average over the last hour, both sites, without BunkerWeb's own health checks."))
-P.append(panel("Visitors (1h)", "stat", LOKI, [loki_instant(f"count(sum by (ip) (count_over_time({BW} [1h]))) or vector(0)")], g, w=3, h=4, decimals=0, color="fixed", sparkline=False,
+P.append(panel("Visitors (1h)", "stat", LOKI, [loki_instant(f"count(sum by (ip) (count_over_time({BW} [1h]))) or vector(0)")], g, w=8, h=4, decimals=0, color="fixed", sparkline=False,
     desc="Distinct client addresses in the last hour. Includes scanners."))
-P.append(panel("5xx (1h)", "stat", LOKI, [loki_instant(f'sum(count_over_time({BW} | status =~ "5.." [1h])) or vector(0)')], g, w=3, h=4, decimals=0, thresholds=ZERO_IS_GOOD, sparkline=False,
+P.append(panel("5xx (1h)", "stat", LOKI, [loki_instant(f'sum(count_over_time({BW} | status =~ "5.." [1h])) or vector(0)')], g, w=8, h=4, decimals=0, thresholds=ZERO_IS_GOOD, sparkline=False,
     desc="Server errors answered to clients in the last hour. Zero is right; 502 means the backend pod was down."))
-P.append(panel("Bans (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({container="bunker-nginx"} |= "[BADBEHAVIOR]" |= "is banned for" [24h])) or vector(0)')], g, w=3, h=4, decimals=0, color="fixed", sparkline=False,
+P.append(panel("Bans (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({container="bunker-nginx"} |= "[BADBEHAVIOR]" |= "is banned for" [24h])) or vector(0)')], g, w=8, h=4, decimals=0, color="fixed", sparkline=False,
     desc="Clients BunkerWeb banned for 24 h after too many 4xx in a minute (threshold in bunker_service_bad_behavior_threshold). See the log panel for the addresses."))
 
 P.append(row("Trends", g))
+P.append(panel("Public URLs over time", "state-timeline", PROM, [prom("probe_success", "{{instance}}")], g, w=24, h=5,
+    mappings=[(0, "DOWN", "red"), (1, "UP", "green")], minimum=0, maximum=1,
+    desc="One band per probed URL, once a minute. A gap means the probe itself did not run; red means DNS, TLS, the WAF or the backend failed."))
 P.append(panel("Requests by site", "timeseries", LOKI, [loki(f"sum by (site) (rate({BW} [$__auto]))", "{{site}}")], g, w=12, unit="reqps", stack=True, legend=("mean", "max"),
     desc="Access-log lines per second per server name. The ntfy site is the phone polling; everything else is Nextcloud."))
 P.append(panel("Responses by class", "timeseries", LOKI, [loki(f'sum by (class) (rate({BW} | label_format class="{{{{ .status | substr 0 1 }}}}xx" [$__auto]))', "{{class}}")], g, w=12, unit="reqps", stack=True, overrides=CLASS_OVERRIDES, legend=("mean", "max"),
@@ -294,11 +328,11 @@ P.append(panel("Probe duration", "timeseries", PROM, [prom("probe_duration_secon
     desc="Full request time of the blackbox probe including DNS and TLS handshake, once a minute. A step up means the backend or the WAF got slower."))
 
 P.append(row("Details", g))
-P.append(top_table("Top clients", LOKI, loki_instant(f"topk(10, sum by (ip) (count_over_time({BW} [$__range])))"), g,
+P.append(top_bars("Top clients", f"topk(10, sum by (ip) (count_over_time({BW} [$__range])))", "ip", g,
     desc="Addresses with the most requests in the dashboard range. Own devices sit on top; a stranger with thousands of hits is a scanner."))
-P.append(top_table("Top paths", LOKI, loki_instant(f"topk(10, sum by (uri) (count_over_time({BW} [$__range])))"), g,
+P.append(top_bars("Top paths", f"topk(10, sum by (uri) (count_over_time({BW} [$__range])))", "uri", g,
     desc="Most requested paths across both sites."))
-P.append(top_table("Top user agents", LOKI, loki_instant(f"topk(10, sum by (ua) (count_over_time({BW} [$__range])))"), g,
+P.append(top_bars("Top user agents", f"topk(10, sum by (ua) (count_over_time({BW} [$__range])))", "ua", g,
     desc="mirall is the Nextcloud desktop client; DAVx5 and Thunderbird sync calendars and contacts."))
 P.append(top_table("ModSecurity rules hit", LOKI, loki_instant('topk(10, sum by (id) (count_over_time({container="bunker-nginx"} |= "ModSecurity" | regexp `\\[id "(?P<id>\\d+)"\\]` | id != "" [$__range])))'), g, value="matches", w=8,
     desc="OWASP CRS rule ids over the dashboard range. 930130 is scanners probing /.env and friends; 920440 a blocked file extension; 949110 the anomaly-score block itself."))
@@ -317,17 +351,17 @@ proxy = dashboard("proxy", "Proxy", ["home-server"], P, links=LINKS)
 # --------------------------------------------------------------------------- nextcloud
 g = Grid()
 P = [row("Now", g)]
-P.append(panel("Requests / min", "stat", LOKI, [loki_instant(f"sum(count_over_time({NGINX} [1h])) / 60 or vector(0)")], g, w=4, h=4, decimals=1, color="fixed", sparkline=False,
+P.append(panel("Requests/min", "stat", LOKI, [loki_instant(f"sum(count_over_time({NGINX} [1h])) / 60 or vector(0)")], g, w=4, h=4, decimals=1, color="fixed", sparkline=False,
     desc="Requests that reached Nextcloud's nginx in the last hour, health checks excluded."))
-P.append(panel("p95 response time", "stat", LOKI, [loki_instant(f"quantile_over_time(0.95, {NGINX} | unwrap request_time [1h]) by (job)")], g, w=4, h=4, unit="s", decimals=2, thresholds=[(None, "green"), (2, "orange"), (5, "red")], sparkline=False, no_value="no requests",
+P.append(panel("p95 latency", "stat", LOKI, [loki_instant(f"quantile_over_time(0.95, {NGINX} | unwrap request_time [1h]) by (job)")], g, w=4, h=4, unit="s", decimals=2, thresholds=[(None, "green"), (2, "orange"), (5, "red")], sparkline=False, no_value="no requests",
     desc="95 % of requests in the last hour were faster than this. Sync clients poll cheaply; the web UI and previews are the slow part."))
 P.append(panel("5xx (1h)", "stat", LOKI, [loki_instant(f'sum(count_over_time({NGINX} | status =~ "5.." [1h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=ZERO_IS_GOOD, sparkline=False,
     desc="Errors nginx answered, mostly php-fpm timeouts (504) or a full worker pool (502)."))
-P.append(panel("Failed logins (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="nextcloud"} |= "Login failed: \'" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (5, "orange"), (20, "red")], sparkline=False,
+P.append(panel("Failed logins", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="nextcloud"} |= "Login failed: \'" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (5, "orange"), (20, "red")], sparkline=False,
     desc="Wrong password or unknown user. Each one also arrives on the phone (NextcloudLoginFailed)."))
-P.append(panel("App warnings+ (24h)", "stat", LOKI, [loki_instant(f"sum(count_over_time({NCLOG} | level >= 2 [24h])) or vector(0)")], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (50, "orange")], sparkline=False,
+P.append(panel("App warnings", "stat", LOKI, [loki_instant(f"sum(count_over_time({NCLOG} | level >= 2 [24h])) or vector(0)")], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (50, "orange")], sparkline=False,
     desc="Nextcloud log level 2 warning, 3 error, 4 fatal. The table below splits them by app."))
-P.append(panel("php-fpm at max children (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="php-fpm"} |= "reached pm.max_children" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "orange")], sparkline=False,
+P.append(panel("php-fpm maxed", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="php-fpm"} |= "reached pm.max_children" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "orange")], sparkline=False,
     desc="Every hit means requests queued. Raise nextcloud_service_php_max_children if this is not zero at quiet times."))
 
 P.append(row("Trends", g))
@@ -345,9 +379,9 @@ P.append(panel("Bytes sent", "timeseries", LOKI, [loki(f"sum(rate({NGINX} | unwr
     desc="Payload nginx sent, from the access log. Downloads and photo previews make the peaks."))
 
 P.append(row("Details", g))
-P.append(top_table("Top paths", LOKI, loki_instant(f'topk(10, sum by (path) (count_over_time({NGINX} | label_format path="{{{{ regexReplaceAll \\"^(/[^/?]*(/[^/?]*)?).*\\" .request_uri \\"${{1}}\\" }}}}" [$__range])))'), g,
+P.append(top_bars("Top paths", f'topk(10, sum by (path) (count_over_time({NGINX} | label_format path="{{{{ regexReplaceAll \\"^(/[^/?]*(/[^/?]*)?).*\\" .request_uri \\"${{1}}\\" }}}}" [$__range])))', "path", g,
     desc="First two path segments. /remote.php/dav is sync and CalDAV, /ocs is the client API, /apps/... the web UI."))
-P.append(top_table("Top client addresses", LOKI, loki_instant(f'topk(10, sum by (addr) (count_over_time({NGINX} | label_format addr="{{{{ if .http_x_forwarded_for }}}}{{{{ .http_x_forwarded_for }}}}{{{{ else }}}}{{{{ .remote_addr }}}}{{{{ end }}}}" [$__range])))'), g,
+P.append(top_bars("Top client addresses", f'topk(10, sum by (addr) (count_over_time({NGINX} | label_format addr="{{{{ if .http_x_forwarded_for }}}}{{{{ .http_x_forwarded_for }}}}{{{{ else }}}}{{{{ .remote_addr }}}}{{{{ end }}}}" [$__range])))', "addr", g,
     desc="Real client address (X-Forwarded-For from BunkerWeb)."))
 P.append(top_table("App log by level", LOKI, loki_instant(f"sum by (level, app) (count_over_time({NCLOG} | level >= 2 [$__range]))"), g, value="lines",
     mappings=[(2, "warning", "orange"), (3, "error", "red"), (4, "fatal", "dark-red")],
@@ -368,51 +402,52 @@ nextcloud = dashboard("nextcloud", "Nextcloud", ["home-server"], P, links=LINKS)
 # --------------------------------------------------------------------------- system
 g = Grid()
 P = [row("Now", g)]
-P.append(panel("Active alerts", "stat", PROM, [prom('sum(alertmanager_alerts{state="active"}) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "orange")],
-    desc="Alerts Alertmanager holds right now, from Prometheus and Loki rules. The list below names them."))
-P.append(panel("Unit failures (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="systemd", user_unit!~"[0-9a-f]{64}-.*"} |~ "(?i)failed with result" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "orange")], sparkline=False,
-    desc="systemd units that ended in failure, system and service users. Podman's transient health-check units are not counted."))
-P.append(panel("SSH logins (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({unit="sshd.service"} |= "Accepted publickey" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, color="fixed", sparkline=False,
-    desc="Accepted key logins. Each one also reaches the phone (SshLogin)."))
-P.append(panel("SSH failures (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({unit="sshd.service"} |~ "Invalid user|Failed (publickey|password)" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "orange")], sparkline=False,
-    desc="SSH is LAN-only, so anything here is a device on the LAN or a typo."))
-P.append(panel("SELinux denials (24h)", "stat", LOKI, [loki_instant(f'sum(count_over_time({AVC} |= "avc:  denied" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (20, "orange")], sparkline=False,
-    desc="Enforced denials only, without pasta's capability probes at every pod start (harmless, excluded from the alert too)."))
-P.append(panel("OOM kills (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="kernel"} |= "Killed process" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=ZERO_IS_GOOD, sparkline=False,
-    desc="Processes the kernel killed for hitting a container's memory ceiling. The OomKill alert names the process."))
+P.append(panel("Active alerts", "stat", PROM, [prom('sum(alertmanager_alerts{state="active"}) or vector(0)')], g, w=6, h=4, decimals=0, thresholds=[(None, "green"), (1, "orange")],
+    desc="Alerts Alertmanager holds right now, from Prometheus and Loki rules. The timeline below names them."))
+P.append(panel("OS update", "stat", LOKI, [loki_instant(f"last_over_time({REBOOT_STATE} | unwrap v [$__range])")], g, w=6, h=4, sparkline=False,
+    mappings=[(0, "up to date", "green"), (1, "reboot pending", "orange"), (2, "waiting for backup", "blue")],
+    thresholds=[(None, "text")], no_value="no run yet",
+    opts={"colorMode": "background", "textMode": "value"},
+    desc="What auto-reboot-staged.service found on its last nightly run: nothing staged, an update waiting for the next reboot, or a backup holding a shutdown inhibitor."))
+P.append(panel("Unhealthy", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="podman"} |= "health_status=unhealthy" [1h])) or vector(0)')], g, w=6, h=4, decimals=0, thresholds=ZERO_IS_GOOD, sparkline=False,
+    desc="Failed container health checks in the last hour. A container restarting after a deploy produces a few; a steady count is a sick container."))
+P.append(panel("Unit failures", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="systemd", user_unit!~"[0-9a-f]{64}-.*"} |~ "(?i)failed with result" [24h])) or vector(0)')], g, w=6, h=4, decimals=0, thresholds=[(None, "green"), (1, "orange")], sparkline=False,
+    desc="systemd units that ended in failure in the last 24 h, system and service users. Podman's transient health-check units are not counted."))
+P.append(panel("SSH logins", "stat", LOKI, [loki_instant('sum(count_over_time({unit="sshd.service"} |= "Accepted publickey" [24h])) or vector(0)')], g, w=6, h=4, decimals=0, color="fixed", sparkline=False,
+    desc="Accepted key logins in the last 24 h. Each one also reaches the phone (SshLogin)."))
+P.append(panel("SSH failures", "stat", LOKI, [loki_instant('sum(count_over_time({unit="sshd.service"} |~ "Invalid user|Failed (publickey|password)" [24h])) or vector(0)')], g, w=6, h=4, decimals=0, thresholds=[(None, "green"), (1, "orange")], sparkline=False,
+    desc="Refused logins in the last 24 h. SSH is LAN-only, so anything here is a device on the LAN or a typo."))
+P.append(panel("SELinux", "stat", LOKI, [loki_instant(f'sum(count_over_time({AVC} |= "avc:  denied" [24h])) or vector(0)')], g, w=6, h=4, decimals=0, thresholds=[(None, "green"), (20, "orange")], sparkline=False,
+    desc="Enforced denials in the last 24 h, without pasta's capability probes at every pod start (harmless, excluded from the alert too)."))
+P.append(panel("OOM kills", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="kernel"} |= "Killed process" [24h])) or vector(0)')], g, w=6, h=4, decimals=0, thresholds=ZERO_IS_GOOD, sparkline=False,
+    desc="Processes the kernel killed in the last 24 h for hitting a container's memory ceiling. The OomKill alert names the process."))
 
 P.append(row("Trends", g))
-P.append(panel("Firing Prometheus alerts", "table", PROM, [prom_instant('ALERTS{alertstate="firing"}')], g, w=12, h=9, no_value="none firing",
-    transformations=[{"id": "organize", "options": {"excludeByName": {"Time": True, "Value": True, "__name__": True, "alertstate": True, "job": True},
-                                                    "indexByName": {"alertname": 0, "severity": 1}}}],
-    overrides=[by_name("severity", custom={"cellOptions": {"type": "color-text"}, "width": 90}),
-               by_name("alertname", custom={"width": 200})],
-    mappings=[("critical", "critical", "red"), ("warning", "warning", "orange"), ("info", "info", "blue")],
-    opts={"sortBy": [{"displayName": "severity", "desc": False}]},
-    desc="Host and probe alerts (Prometheus rules) with their labels. Loki's alerts have no queryable state; ruler remote_write into Prometheus stalled every evaluation ('appender not ready'), so they show only as events in the logs below and on the phone."))
-P.append(panel("Journal errors by unit", "timeseries", LOKI, [loki('sum by (unit) (count_over_time({job="systemd-journal", priority=~"[0-3]", unit!~"user@.*"} [$__auto]))', "{{unit}}")], g, w=12, h=9, decimals=0, stack=True, bars=True, legend=("sum",),
-    desc="Lines at priority emerg, alert, crit or err per interval, host units only. Container output is excluded: the proxy pod's journald driver files every stderr line as err, and the other pods log at info (passthrough)."))
-P.append(panel("Restarts per unit", "timeseries", LOKI, [loki('sum by (user_unit) (count_over_time({syslog_identifier="systemd", user_unit=~".+"} |= "Scheduled restart job" [$__auto]))', "{{user_unit}}")], g, w=12, h=9, decimals=0, stack=True, bars=True, legend=("sum",),
-    desc="Automatic restarts of container units. A deploy restarts the pods once; a bar every ten seconds is a crash loop (ContainerRestartLoop)."))
+P.append(panel("Container health: green healthy, blue running, yellow starting, red stopped or unhealthy", "state-timeline", LOKI, [loki(f"last_over_time({CSTATE} | unwrap v [$__auto]) by (c)", "{{c}}")], g, w=24, h=14,
+    mappings=CSTATE_MAP,
+    desc="Every container podman reported on, from its own event log. A deploy shows as a short stopped-starting-healthy sequence on the whole pod; a single red band is one container in trouble. Containers without a health check stay blue while they run."))
+P.append(panel("Alerts firing", "state-timeline", PROM, [prom('ALERTS{alertstate="firing"}', "{{alertname}} {{severity}}")], g, w=12, h=9,
+    mappings=[(1, "firing", "red")], no_value="none fired in this range",
+    desc="Prometheus rules only: host, target and probe alerts. Loki's rules have no queryable state, so its alerts appear as events in the log panels and on the phone."))
+P.append(panel("Journal error lines by unit", "timeseries", LOKI, [loki('sum by (unit) (count_over_time({job="systemd-journal", priority=~"[0-3]", unit!~"user@.*|session-.*|run-.*", unit!=""} [$__auto]))', "{{unit}}")], g, w=12, h=9, decimals=0, stack=True, bars=True, legend=("sum",),
+    desc="Lines the host's own units logged at priority emerg, alert, crit or err, counted per bar. The legend column is the total over the selected range. Login session scopes and container output are excluded: the proxy pod's journald driver files every stderr line as err, and the other pods log at info."))
 P.append(panel("Scheduled jobs", "timeseries", LOKI, [
     loki('sum by (unit) (count_over_time({unit=~"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service"} |= "Deactivated successfully" [$__auto]))', "{{unit}} finished"),
-    loki('sum by (unit) (count_over_time({unit=~"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service"} |~ "Failed with result" [$__auto]))', "{{unit}} FAILED")], g, w=12, h=9, decimals=0, bars=True, stack=True, legend=("sum",),
+    loki('sum by (unit) (count_over_time({unit=~"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service"} |~ "Failed with result" [$__auto]))', "{{unit}} FAILED")], g, w=24, h=8, decimals=0, bars=True, stack=True, legend=("sum",),
     overrides=[{"matcher": {"id": "byRegexp", "options": ".*FAILED"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}]}],
     desc="Snapshots daily, the database dump before the Nextcloud snapshot, the backup to the NAS nightly. A missing bar raises BackupMissing after 30 h."))
 
 P.append(row("Logs", g))
-P.append(panel("Container state changes", "logs", LOKI, [loki('{syslog_identifier="systemd", user_unit=~"(nextcloud|bunker|monitoring|nc|proxy)-.*"} |~ "Started|Stopped|Failed with result|Scheduled restart|Main process exited" | line_format "{{.user_unit}}: {{ __line__ }}"')], g, w=12, h=10,
-    desc="Manager messages about the service users' containers. A deploy restarts the pods; anything else here deserves a look."))
 P.append(panel("Logins", "logs", LOKI, [loki('{unit="sshd.service"} |~ "Accepted publickey|Failed (publickey|password)|Invalid user" | regexp "(?P<what>Accepted publickey|Failed publickey|Failed password|Invalid user) (for )?(?P<user>[^ ]+) from (?P<ip>[0-9a-f.:]+)" | line_format "{{.what}}: {{.user}} from {{.ip}}"')], g, w=12, h=10,
     desc="Accepted and refused SSH logins with user and address."))
-P.append(panel("Updates, reboots, boots", "logs", LOKI, [loki('{unit=~"rpm-ostreed.service|auto-reboot-staged.service|init.scope"} |~ "Staged|Deployment|Rebooting|Startup finished|reboot|No staged deployment"')], g, w=12, h=9,
+P.append(panel("Updates, reboots, boots", "logs", LOKI, [loki('{unit=~"rpm-ostreed.service|auto-reboot-staged.service|init.scope"} |~ "Staged|Deployment|Rebooting|Startup finished|reboot|No staged deployment"')], g, w=12, h=10,
     desc="rpm-ostree stages an OS update (UpdateStaged); auto-reboot-staged.timer reboots at night when one is staged and no backup holds an inhibitor (AutoReboot); 'Startup finished' is the boot (HostBooted)."))
 P.append(panel("Scheduled jobs", "logs", LOKI, [loki('{unit=~"btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall.service|unstick-jobs.service|podman-auto-update.service"} |~ "Deactivated successfully|Failed with result|run complete|Starting|error|Error"')], g, w=12, h=9,
     desc="Backups, snapshots, the database dump, job unsticking and image updates: start, end and errors."))
-P.append(panel("SELinux denials and OOM kills", "logs", LOKI, [loki(AVC)], g, w=12, h=9,
-    desc="Raw audit and kernel lines. `scontext` names the confined domain; `comm` the program."))
 P.append(panel("Image pulls", "logs", LOKI, [loki('{syslog_identifier="podman"} |= "Trying to pull"')], g, w=12, h=9,
     desc="Every image podman fetched: a deploy with a new tag, or podman-auto-update following a tag's digest (ImagePulled)."))
+P.append(panel("SELinux denials and OOM kills", "logs", LOKI, [loki(AVC)], g, w=24, h=9,
+    desc="Raw audit and kernel lines. `scontext` names the confined domain; `comm` the program."))
 system = dashboard("system", "System log", ["home-server"], P, links=LINKS)
 
 for d in (host, proxy, nextcloud, system):

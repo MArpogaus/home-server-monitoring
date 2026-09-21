@@ -4,9 +4,8 @@ ContainerName=monitoring-node-exporter
 PodmanArgs=--volume=/proc:/host/proc:ro --volume=/sys:/host/sys:ro --volume=/:/rootfs:ro --pid=host {{ monitoring_service_node_exporter_extra_args }}
 # Entrypoint= is a single executable; arguments go in Exec=, which podman
 # appends to the image's existing entrypoint (/bin/node_exporter).
+# No --collector.systemd: it talks to /run/systemd/private, a root-only socket
+# that is not in the container, so it would need this container to run as root
+# with the host's systemd control socket mounted. Unit state comes from the
+# journal instead (the System log dashboard derives it there).
 Exec=--path.procfs=/host/proc --path.sysfs=/host/sys --path.rootfs=/rootfs --collector.hwmon
-HealthCmd=wget -qO /dev/null http://127.0.0.1:9100/metrics
-HealthInterval=60s
-HealthStartPeriod=30s
-HealthOnFailure=kill
-Pod=monitoring.pod
