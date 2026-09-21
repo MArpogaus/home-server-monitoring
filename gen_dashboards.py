@@ -242,7 +242,7 @@ nextcloud = dashboard("nextcloud", "Nextcloud", ["home-server"], P, links=LINKS)
 g = Grid()
 P = []
 P.append(panel("Active alerts", "stat", PROM, [prom('sum(alertmanager_alerts{state="active"}) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "orange")]))
-P.append(panel("Unit failures (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="systemd"} |= "Failed with result" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "orange")]))
+P.append(panel("Unit failures (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="systemd", user_unit!~"[0-9a-f]{64}-.*"} |~ "(?i)failed with result" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "orange")], desc="Podman's transient health-check units are not counted."))
 P.append(panel("SSH logins (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({unit="sshd.service"} |= "Accepted publickey" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, color="fixed"))
 P.append(panel("SSH failures (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({unit="sshd.service"} |~ "Invalid user|Failed (publickey|password)" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (1, "orange")]))
 P.append(panel("SELinux denials (24h)", "stat", LOKI, [loki_instant('sum(count_over_time({syslog_identifier="audit"} |= "avc:  denied" != "permissive=1" [24h])) or vector(0)')], g, w=4, h=4, decimals=0, thresholds=[(None, "green"), (20, "orange")], desc="Enforced denials only."))

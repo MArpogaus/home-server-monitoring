@@ -1,6 +1,6 @@
 loki.source.journal "host" {
   path           = "/var/log/journal"
-  max_age        = "12h"
+  max_age        = "168h"
   relabel_rules  = loki.relabel.journal.rules
   forward_to     = [loki.write.local.receiver]
 }

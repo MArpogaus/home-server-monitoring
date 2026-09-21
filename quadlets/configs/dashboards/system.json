@@ -148,7 +148,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({syslog_identifier=\"systemd\"} |= \"Failed with result\" [24h])) or vector(0)",
+          "expr": "sum(count_over_time({syslog_identifier=\"systemd\", user_unit!~\"[0-9a-f]{64}-.*\"} |~ \"(?i)failed with result\" [24h])) or vector(0)",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A",
@@ -188,6 +188,7 @@
           "fields": ""
         }
       },
+      "description": "Podman's transient health-check units are not counted.",
       "id": 2
     },
     {

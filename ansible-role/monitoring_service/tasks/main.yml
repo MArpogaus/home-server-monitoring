@@ -18,3 +18,26 @@
   until: monitoring_service_ready is success
   retries: 30
   delay: 10
+
+# GF_SECURITY_ADMIN_PASSWORD applies to a fresh database only.
+- name: Try the Grafana admin password
+  ansible.builtin.uri:
+    url: http://127.0.0.1:3000/api/org
+    user: admin
+    password: "{{ monitoring_service_grafana_admin_password }}"
+    force_basic_auth: true
+    status_code: [200, 401]
+  register: monitoring_service_grafana_login
+  when: monitoring_service_grafana_admin_password | length > 0
+  no_log: true
+
+- name: Set the Grafana admin password
+  ansible.builtin.command:
+    cmd: podman exec monitoring-grafana grafana cli admin reset-admin-password {{ monitoring_service_grafana_admin_password | quote }}
+  become: true
+  become_user: "{{ service_user }}"
+  when:
+    - monitoring_service_grafana_admin_password | length > 0
+    - monitoring_service_grafana_login.status == 401
+  changed_when: true
+  no_log: true

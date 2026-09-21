@@ -22,6 +22,14 @@ common:
 
 limits_config:
   allow_structured_metadata: false
+  retention_period: 30d
+
+# Retention needs the compactor; without it the journal copy grows forever
+# on the disk it shares with the data.
+compactor:
+  working_directory: /loki/compactor
+  retention_enabled: true
+  delete_request_store: filesystem
 
 ruler:
   storage:

@@ -10,6 +10,7 @@ HealthCmd=wget -qO /dev/null http://127.0.0.1:9090/-/healthy
 HealthInterval=60s
 HealthStartPeriod=60s
 HealthOnFailure=kill
+Exec=--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.time=90d --storage.tsdb.retention.size=2GB
 Pod=monitoring.pod
 
 [Service]

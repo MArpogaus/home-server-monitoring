@@ -9,6 +9,7 @@ Environment=NTFY_BEHIND_PROXY=true
 # offline never receives what was published meanwhile, and a reboot wipes
 # the topic.
 Environment=NTFY_CACHE_FILE=/var/cache/ntfy/cache.db
+Environment=NTFY_CACHE_DURATION=72h
 Volume=ntfy-cache:/var/cache/ntfy:Z
 Exec=serve
 PodmanArgs={{ monitoring_service_ntfy_extra_args }}

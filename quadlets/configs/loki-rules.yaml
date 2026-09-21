@@ -50,7 +50,7 @@ groups:
           sum by (unit) (
             count_over_time(
               {job="systemd-journal", syslog_identifier="systemd", unit=~"(btrfs-backup@.*|btrfs-snapshot@.*|pg-dumpall)\\.service"}
-                |= "Failed with result" [6h]
+                |~ "(?i)failed with result" [6h]
             )
           ) > 0
         for: 5m
@@ -62,6 +62,31 @@ groups:
             A scheduled backup, snapshot or database dump failed. Check
             `journalctl -u {{ $labels.unit }}`. Until it succeeds the data it
             protects has no fresh copy.
+
+      # A disabled timer or a removed unit fails nothing; silence is the symptom.
+      - alert: BackupMissing
+        expr: |
+          absent_over_time({job="systemd-journal", syslog_identifier="systemd", unit=~"btrfs-backup@.*"} |= "Deactivated successfully" [30h])
+        labels:
+          severity: critical
+        annotations:
+          summary: "No backup finished in 30 hours"
+
+      - alert: SnapshotMissing
+        expr: |
+          absent_over_time({job="systemd-journal", syslog_identifier="systemd", unit=~"btrfs-snapshot@.*"} |= "Deactivated successfully" [30h])
+        labels:
+          severity: critical
+        annotations:
+          summary: "No snapshot finished in 30 hours"
+
+      - alert: DumpMissing
+        expr: |
+          absent_over_time({job="systemd-journal", syslog_identifier="systemd", unit="pg-dumpall.service"} |= "Deactivated successfully" [30h])
+        labels:
+          severity: critical
+        annotations:
+          summary: "No database dump finished in 30 hours"
 
   - name: events
     interval: 1m

@@ -18,6 +18,8 @@ monitoring_service_alertmanager_extra_args: "--memory=128M --pids-limit=512 --se
 monitoring_service_node_exporter_extra_args: "--memory=64M --pids-limit=512 --security-opt=no-new-privileges"
 
 monitoring_service_grafana_max_conns: "2"
+# Empty leaves Grafana at admin/admin, which the proxy pod can reach.
+monitoring_service_grafana_admin_password: ""
 
 monitoring_service_ntfy_url: "http://127.0.0.1:8081/alerts"
 monitoring_service_ntfy_base_url: "http://127.0.0.1:8081"
