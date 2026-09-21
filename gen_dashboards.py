@@ -37,13 +37,8 @@ CSTATE = ('{syslog_identifier="podman"} |~ `container (start|died|health_status)
 REBOOT_STATE = ('{unit="auto-reboot-staged.service"} |~ "No staged deployment|Staged deployment found|Blocked by"'
                 ' | label_format v=`{{ if contains "No staged" __line__ }}0'
                 '{{ else if contains "Blocked" __line__ }}2{{ else }}1{{ end }}`')
-# sshd, straight from its unit. journald strips the syslog prefix, so a line
-# starts at "Accepted" or "Connection closed"; the community SSH dashboards
-# (grafana.com 17514 and 21750) assume promtail on /var/log/auth.log and match
-# "sshd[", which never appears here.
-# admin_audit writes one JSON line per action: who did what to which file.
-# The first two words of the message are the action ("File written",
-# "File deleted", "Login successful", ...).
+# sshd, straight from its unit; README, "Dashboards".
+# The first two words of an admin_audit message are the action.
 AUDIT = ('{syslog_identifier="nextcloud"} | json | app="admin_audit"'
          ' | label_format action=`{{ regexReplaceAll "^([A-Za-z]+ [a-z]+).*$" .message "${1}" }}`')
 

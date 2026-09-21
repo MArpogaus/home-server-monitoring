@@ -69,6 +69,15 @@ ruler's `remote_write` into Prometheus stalled every evaluation
 (`appender not ready`) and was reverted, so only Prometheus alerts are
 listed and Loki's show up as events in the log panels.
 
+Unit and container state are derived from the journal, not from metrics.
+node-exporter's systemd collector would need this container to run as root
+with the host's `/run/systemd/private` socket mounted, which is more privilege
+than a state band is worth, and podman publishes container start, death and
+health events to the journal anyway. The SSH panels read `sshd.service`
+directly; the community SSH dashboards on grafana.com expect promtail reading
+`/var/log/auth.log` and match on `sshd[`, a prefix journald strips, so their
+queries find nothing here without rewriting.
+
 The Loki panels parse the nginx JSON access log and BunkerWeb's access line
 with `pattern`; a change to either format is a change to the generator. The
 datasources carry fixed uids (`prometheus`, `loki`, `alertmanager`) so the
@@ -146,11 +155,11 @@ links in a notification point at it. Subscribe to the topic `alerts` with
 
 Authentication is ntfy's own (`NTFY_AUTH_*`, default `deny-all`): one user
 for the phone, one token for Alertmanager, both declared in the container
-unit and synced into `user.db` at every start. The proxy used to enforce
-basic auth instead; ntfy then needed no database, but every client shared
-one password, a machine token was impossible, and BunkerWeb counted the
-phone's own `401` round trips as bad behaviour. Anything on the host that
-posts to the topic sends the token too.
+unit and synced into `user.db` at every start. ntfy authenticates rather than
+the proxy, so the phone and the machines have separate credentials, a token
+can be revoked on its own, and the proxy does not count the phone's `401`
+round trips as bad behaviour. Anything on the host that posts to the topic
+sends the token too.
 
 The topic is also a channel:
 `curl -H "Authorization: Bearer $token" -d "text" http://127.0.0.1:8081/alerts`
