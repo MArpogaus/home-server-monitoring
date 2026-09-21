@@ -1,3 +1,7 @@
+# This file stays world-readable although it carries the ntfy token: the
+# container runs as `nobody`, which maps outside the service user, so a 0600
+# file owned by that user is unreadable to Alertmanager. The service home is
+# 0750, so only this user and root can reach it.
 route:
   receiver: ntfy
   # One notification per alert: a group shares only the annotations common to

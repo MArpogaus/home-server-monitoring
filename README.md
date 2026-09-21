@@ -200,13 +200,15 @@ podman exec monitoring-alertmanager amtool --alertmanager.url=http://127.0.0.1:9
 
 ### File modes
 
-`nextcloud` and `bunker` template their environment files `0600`; this repo
-does not, and that is deliberate. An `EnvironmentFile` is read by the user's
-systemd manager, so `0600` costs nothing. `alertmanager.yaml` carries the ntfy
-token but is bind-mounted into a container that runs as `nobody`, which maps
-to a subuid outside the service user: `0600` makes it unreadable and
-Alertmanager exits. The service home is `0750`, so only this user and root
-reach either file.
+`ntfy-auth.env` and `grafana.env` carry credentials and are templated `0600`
+(`vars/main.yml`). Quadlet turns `EnvironmentFile=` into `podman run
+--env-file`, so the values still reach the container's environment and
+`podman inspect`; the mode keeps them out of a world-readable file on the
+host, nothing more. `alertmanager.yaml` carries the ntfy token and stays
+`0644`, because it is bind-mounted into a container that runs as `nobody`,
+which maps outside the service user's subuid range: at `0600` Alertmanager
+cannot read it and exits. The service home is `0750`, so only this user and
+root reach any of them.
 
 ## Role contract
 

@@ -2,11 +2,7 @@
 Image={{ monitoring_service_grafana_image }}
 ContainerName=monitoring-grafana
 # Two cores, one browser: more connections only queue deeper in Grafana.
-Environment=GF_DATAPROXY_MAX_CONNS_PER_HOST=2
-Environment=GF_AUTH_ANONYMOUS_ENABLED=false
-{% if monitoring_service_grafana_admin_password %}
-Environment=GF_SECURITY_ADMIN_PASSWORD={{ monitoring_service_grafana_admin_password }}
-{% endif %}
+EnvironmentFile=./configs/grafana.env
 Volume=./configs/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:Z
 Volume=./configs/grafana-dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:Z
 Volume=./configs/dashboards/:/etc/grafana/provisioning/dashboards/home-server/:Z

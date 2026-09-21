@@ -1,3 +1,4 @@
+{% raw %}
 ---
 groups:
   - name: containers
@@ -64,6 +65,9 @@ groups:
             protects has no fresh copy.
 
       # A disabled timer or a removed unit fails nothing; silence is the symptom.
+{% endraw %}
+{% if base_setup_backup_targets | default([]) | length > 0 %}
+{% raw %}
       - alert: BackupMissing
         expr: |
           absent_over_time({job="systemd-journal", syslog_identifier="systemd", unit=~"btrfs-backup@.*"} |= "Deactivated successfully" [30h])
@@ -72,6 +76,9 @@ groups:
         annotations:
           summary: "No backup finished in 30 hours"
 
+{% endraw %}
+{% endif %}
+{% raw %}
       - alert: SnapshotMissing
         expr: |
           absent_over_time({job="systemd-journal", syslog_identifier="systemd", unit=~"btrfs-snapshot@.*"} |= "Deactivated successfully" [30h])
@@ -241,3 +248,4 @@ groups:
           severity: warning
         annotations:
           summary: "BunkerWeb could not renew a Let's Encrypt certificate"
+{% endraw %}
