@@ -88,18 +88,12 @@
   loop_control:
     label: "{{ item.1 | basename }}"
 
-- name: Keep the syslog identifiers that a rule selects
+- name: Keep the syslog identifiers that a rule or a dashboard selects
   ansible.builtin.set_fact:
     monitoring_service_idents: >-
-      {{ monitoring_service_idents | default([])
-         + (lookup('ansible.builtin.file', item) | regex_findall('syslog_identifier\s*[=!]~?\s*\\*"([^"\\]+)')) }}
-  loop: "{{ monitoring_service_files | map(attribute='src') | list }}"
-
-- name: Keep the syslog identifiers that a dashboard selects
-  ansible.builtin.set_fact:
-    monitoring_service_idents: >-
-      {{ (monitoring_service_idents | default([])
-          + (monitoring_service_dashboards | default([]) | map(attribute='json') | to_json | regex_findall('syslog_identifier\s*[=!]~?\s*\\*"([^"\\]+)')))
+      {{ (query('ansible.builtin.file', *(monitoring_service_files | map(attribute='src')))
+          + [monitoring_service_dashboards | default([]) | map(attribute='json') | to_json])
+         | join('\n') | regex_findall('syslog_identifier\s*[=!]~?\s*\\*"([^"\\]+)')
          | map('split', '|') | flatten | unique | sort }}
 
 - name: Add the link bar to every dashboard
