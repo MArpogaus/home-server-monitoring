@@ -255,7 +255,11 @@ This repository's rules:
 
 Alertmanager groups by every label (`group_by: ['...']`), so each alert is a
 group of its own. A group shares only the annotations common to all its alerts,
-and ntfy renders a missing one as `<no value>`. Prometheus labels its alerts
+and ntfy renders a missing one as `<no value>`.
+`quadlets/configs/ntfy-templates/alertmanager.yml` turns the webhook into the
+notification: the alert name as the title, ` resolved` appended when it clears,
+the summary and the description as the message, and the priority from
+`severity`. Prometheus labels its alerts
 `source: prometheus`. While `LogShippingStopped` fires, Alertmanager holds back
 every alert without that label, so a blind Loki does not page its log rules as
 failures.

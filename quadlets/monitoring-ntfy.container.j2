@@ -9,6 +9,7 @@ Environment=NTFY_CACHE_DURATION=72h
 EnvironmentFile=./configs/ntfy-auth.env
 Volume=ntfy-cache:/var/cache/ntfy:Z
 Volume=ntfy-data:/var/lib/ntfy:Z
+Volume=./configs/ntfy-templates/:/etc/ntfy/templates/:ro,Z
 Exec=serve
 Memory=128M
 HealthCmd=wget -qO /dev/null http://127.0.0.1:8081/v1/health
