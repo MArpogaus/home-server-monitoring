@@ -1,4 +1,4 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>MArpogaus/home-server-core//.github/renovate-image-tags"]
+  "extends": ["github>MArpogaus/home-server//.github/renovate-image-tags"]
 }
