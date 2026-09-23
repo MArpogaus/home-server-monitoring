@@ -348,10 +348,10 @@ any of them.
 ## Role contract
 
 `site.yml` passes `service_name`, `service_home` and `service_repo`. The role
-also reads `base_setup_services` from the group vars. The role hands the
-collected monitoring files to `quadlet_service` from `home-server` as
-`quadlet_service_extra_files`. That role stages them with `quadlets/`, templates
-the `.j2` files and restarts the pod when a file changed.
+also reads `base_setup_services`, and needs the `repo` and `dir` of every entry,
+which a pre-task in `home-server`'s `site.yml` adds. It hands the collected
+monitoring files to `home-server`'s `quadlet_service` as
+`quadlet_service_extra_files` (`home-server/docs/DESIGN.md`).
 
 The role also loads a system-wide SELinux module, `alloy_journal_watch`. That
 is the one thing it changes outside its own service user.
