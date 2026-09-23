@@ -57,9 +57,7 @@ Grafana's datasource proxy with the admin login:
 refuses delete requests (`deletion_mode: disabled`).
 
 `home-server/README.md`, "Interfaces", has the addresses and logins of Grafana
-and ntfy. SecureBlue's sshd forbids port forwarding;
-`platform/secureblue.yml` in `home-server` gives the admin user the local kind
-back.
+and ntfy, and `home-server/docs/HARDENING.md` why SSH allows local forwarding.
 
 The pod mounts every config file read-only, and `quadlet_service` repairs drift
 on the next deploy. Loki has no health check: its image carries neither `wget`
@@ -120,10 +118,10 @@ monitoring/
   alloy-redact.txt        values Alloy redacts
 ```
 
-The role collects the directory from `home-server` and from the repository
-of each entry in `base_setup_services`, on the controller, at every deploy. The
-rule files go out verbatim: they are not templates. Each dashboard goes out with
-the link bar that the role adds (see below). Each repository becomes one
+The role collects the directory from `home-server` and from each service's
+checkout at `home-server/services/<repo>`, on the controller, at every deploy.
+The rule files go out verbatim: they are not templates. Each dashboard goes out
+with the link bar that the role adds (see below). Each repository becomes one
 Prometheus rule file, one Loki rule namespace and one Grafana folder, all named
 after the repository. A file that leaves a repository leaves the host on the
 next deploy. Only this role writes the rules, as the `monitoring` user, so no
