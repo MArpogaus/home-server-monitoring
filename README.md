@@ -11,8 +11,8 @@ its own rules and dashboards: see "Monitoring files of a repository".
 ## Architecture
 
 ```
-  node-exporter (9100) ─┐
-  blackbox (9115) ──────┤
+  node-exporter (9100) ──┐
+  blackbox (9115) ───────┤
                          ├─ prometheus (9090) ─ alertmanager (9093) ─ ntfy (8081)
   host journal ─ alloy ──┤                                  │
                          └─ loki (3100) ──────── grafana (3000)
