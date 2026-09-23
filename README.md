@@ -114,6 +114,8 @@ monitoring/
   prometheus-rules.yaml   Prometheus rule groups
   loki-rules.yaml         Loki ruler groups
   dashboards/*.json       Grafana dashboards
+  alloy-drop.txt          journal lines Alloy drops
+  alloy-redact.txt        values Alloy redacts
 ```
 
 The role collects the directory from `home-server-core` and from the repository
@@ -124,6 +126,15 @@ Prometheus rule file, one Loki rule namespace and one Grafana folder, all named
 after the repository. A file that leaves a repository leaves the host on the
 next deploy. Only this role writes the rules, as the `monitoring` user, so no
 service can change the alerts of another.
+
+The two Alloy files hold one RE2 regex per line; `#` lines and blank lines do
+not count. Alloy applies them to every journal line, whoever wrote it, before
+the line reaches Loki. A line that matches a pattern in `alloy-drop.txt` is
+dropped, counted under the repository's name in
+`loki_process_dropped_lines_total`. In a line that matches a pattern in
+`alloy-redact.txt`, the pattern's first capture group becomes `<redacted>`, so a
+repository keeps its own credentials out of Loki. The owning repository's README
+says what each pattern is for.
 
 Check a rule file before you commit it:
 
@@ -137,7 +148,7 @@ A rule obeys these conventions:
 - `labels.severity` is `critical`, `warning` or `info` ("Alerts").
 - `annotations.summary` is one line and names what is wrong. It is the whole
   message on the phone.
-- The alert name starts with the service, for example `Nextcloud…`.
+- The alert name starts with the service's name.
 - A Loki rule selects only on the labels in "Labels", and pins the labels that
   the sender cannot write ("Writing a log rule").
 - A dashboard carries the tag `home-server` and no `links`. The role writes one
@@ -236,8 +247,7 @@ allow rule would open every D-Bus service to a container.
 ntfy listens on the pod loopback. The pod publishes it on the host's
 `127.0.0.1:8081`. The phone reaches it through an SSH tunnel
 (`ssh -L 8081:localhost:8081 core@host`) or through BunkerWeb, which serves
-ntfy on a name of its own with TLS (`bunker_service_ntfy_server_name` in
-`home-server-bunker`). Set `monitoring_service_ntfy_base_url` to that address,
+ntfy on a name of its own with TLS. Set `monitoring_service_ntfy_base_url` to that address,
 so that links in a notification point at it. Subscribe to the topic `alerts`
 with the user `ntfy` and `monitoring_service_ntfy_password`.
 
@@ -253,29 +263,6 @@ on stdin (`curl -K -`, as in "Operations"),
 `curl -K - -d "text" http://127.0.0.1:8081/alerts` posts a message and
 `curl -K - 'http://127.0.0.1:8081/alerts/json?poll=1&since=<epoch>'` reads the
 cached messages.
-
-## Dropped lines
-
-Nextcloud's apps read config keys that their config lexicon does not declare,
-and Nextcloud logs one info line per key per request. The line reports nothing,
-so `config.alloy` drops it and keeps every other info line.
-
-## Redaction
-
-A Nextcloud link carries its credential in its path: a share link, a password
-reset link and a public WebDAV path all do. Loki keeps 30 days, so a raw path
-hands every reader of Grafana a working link. `loki.process "sanitize"`
-replaces the token with `<redacted>` before the line reaches Loki, for every
-producer, the proxy included. A second rule redacts `token "…"`, the form in
-which Nextcloud's audit log names a public share.
-
-Rederive the route list from the deployed image after a major Nextcloud
-version, and after an app is enabled:
-
-```bash
-grep -rhoE "'url' *=> *'[^']*\{token\}[^']*'" \
-  /var/www/html/{core,apps/*}/appinfo/routes.php
-```
 
 ## Operations
 

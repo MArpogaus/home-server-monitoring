@@ -5,24 +5,23 @@ loki.source.journal "host" {
   forward_to     = [loki.process.sanitize.receiver]
 }
 
-// README.md, "Dropped lines" and "Redaction".
+// README.md, "Monitoring files of a repository".
 loki.process "sanitize" {
   forward_to = [loki.write.local.receiver]
+{% for f in monitoring_service_alloy | default([]) if f.kind == 'drop' %}{% for p in f.patterns %}
 
   stage.drop {
-    expression          = ".*is not defined in the config lexicon.*"
-    drop_counter_reason = "nextcloud_config_lexicon"
+    expression          = {{ p | to_json }}
+    drop_counter_reason = {{ f.repo | to_json }}
   }
+{% endfor %}{% endfor %}
+{% for f in monitoring_service_alloy | default([]) if f.kind == 'redact' %}{% for p in f.patterns %}
 
   stage.replace {
-    expression = "(?:/s/|/apps/files_sharing/publicpreview/|/lostpassword/(?:reset/form|set)/|/public\\.php/dav/[^/?\\s\"]+/|/apps/files/directEditing/|/ocs/v[12]\\.php/apps/files/api/v1/openlocaleditor/|/apps/photos/public/|/apps/dav/invitation/(?:accept|decline|moreOptions)/|/ocs/v[12]\\.php/apps/activity/api/v2/remote/|/apps/circles/async/|/apps/provisioning_api/mailVerification/[^/?\\s\"]+/)([^/?\\s\"&\\\\]+)"
+    expression = {{ p | to_json }}
     replace    = "<redacted>"
   }
-
-  stage.replace {
-    expression = "token \\\\?\"([^\"\\\\]+)"
-    replace    = "<redacted>"
-  }
+{% endfor %}{% endfor %}
 }
 
 loki.relabel "journal" {

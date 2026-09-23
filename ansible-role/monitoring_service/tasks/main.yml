@@ -55,6 +55,22 @@
       - {src: prometheus-rules.yaml, dest: configs/rules/prometheus/, suffix: .yaml}
       - {src: loki-rules.yaml, dest: configs/rules/loki/, suffix: .yaml}
 
+- name: Read the log drop and redaction patterns of every repository
+  ansible.builtin.set_fact:
+    monitoring_service_alloy: >-
+      {{ monitoring_service_alloy | default([])
+         + [{'kind': item.1, 'repo': item.0,
+             'patterns': lookup('ansible.builtin.file', monitoring_service_alloy_file).splitlines()
+                         | map('trim') | reject('match', '#') | reject('eq', '') | list}] }}
+  when: monitoring_service_alloy_file is exists
+  loop: "{{ (['core'] + base_setup_services | map(attribute='repo') | list) | product(['drop', 'redact']) | list }}"
+  loop_control:
+    label: "{{ item.0 }} {{ item.1 }}"
+  vars:
+    monitoring_service_alloy_file: >-
+      {{ (playbook_dir if item.0 == 'core' else (service_repo | dirname) ~ '/home-server-' ~ item.0)
+         ~ '/monitoring/alloy-' ~ item.1 ~ '.txt' }}
+
 - name: Find the dashboards, the platform's first
   ansible.builtin.set_fact:
     monitoring_service_dashboard_files: >-
