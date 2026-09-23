@@ -216,6 +216,31 @@ repository's cover the host and the monitoring itself, `home-server-core`'s the
 host jobs, and each service its own. A rule's `summary` is the notification
 text.
 
+This repository's rules:
+
+| Alert | Severity | Fires when |
+|---|---|---|
+| `ContainerRestartLoop` | critical | A service's unit restarts more than 5 times in 15 minutes |
+| `UserUnitFailed` | warning | A service's unit fails, `podman-auto-update.service` included |
+| `TargetDown` | critical | A scrape target is down for 5 minutes |
+| `HostMemoryPressure` | critical | Tasks stall on memory for more than 10 % of the time for 10 minutes |
+| `OomKill` | warning | The kernel OOM killer ends a process |
+| `ZramFull` | warning | zram swap is more than 80 % full for 15 minutes |
+| `HostLowDiskSpace` | critical | `/var` has less than 10 % free for 5 minutes |
+| `HostDiskFillsSoon` | warning | At the trend of the last 6 h, `/var` fills within 3 days, for 6 hours |
+| `BtrfsDeviceErrors` | critical | A Btrfs device counts a new error |
+| `HostHighTemperature` | warning | A sensor reads above 85 °C for 10 minutes |
+| `ClockNotSynchronised` | warning | The clock is not synchronised for 30 minutes |
+| `HostBooted` | info | The host booted in the last 15 minutes |
+| `PublicUrlDown` | critical | A probe URL fails for 5 minutes |
+| `CertificateExpiresSoon` | warning | A probed certificate expires within 14 days |
+| `CertificateExpiring` | critical | A probed certificate expires within 3 days |
+| `LogShippingStopped` | critical | Alloy sends no line to Loki for 30 minutes |
+| `LokiDiscardingLogs` | critical | Loki discards lines at a stream or rate limit |
+| `RuleEvaluationFailing` | critical | A Prometheus or Loki rule fails to evaluate |
+| `TextfileScrapeError` | critical | node-exporter cannot read a textfile metric |
+| `AlertDeliveryFailing` | critical | Alertmanager cannot deliver a notification |
+
 Alertmanager groups by every label (`group_by: ['...']`), so each alert is a
 group of its own. A group shares only the annotations common to all its alerts,
 and ntfy renders a missing one as `<no value>`. Prometheus labels its alerts `source: prometheus`. While
