@@ -216,9 +216,9 @@ repository's cover the host and the monitoring itself, `home-server-core`'s the
 host jobs, and each service its own. A rule's `summary` is the notification
 text.
 
-Alertmanager groups by nothing (`group_by: ['...']`): a group shares only the
-annotations common to all its alerts, and ntfy renders a missing one as
-`<no value>`. Prometheus labels its alerts `source: prometheus`. While
+Alertmanager groups by every label (`group_by: ['...']`), so each alert is a
+group of its own. A group shares only the annotations common to all its alerts,
+and ntfy renders a missing one as `<no value>`. Prometheus labels its alerts `source: prometheus`. While
 `LogShippingStopped` fires, Alertmanager holds back every alert without that
 label, so a blind Loki does not page its log rules as failures.
 
