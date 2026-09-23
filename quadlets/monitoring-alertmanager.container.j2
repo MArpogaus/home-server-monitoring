@@ -1,0 +1,11 @@
+[Container]
+Image={{ monitoring_service_alertmanager_image }}
+ContainerName=monitoring-alertmanager
+Volume=./configs/alertmanager.yaml:/etc/alertmanager/alertmanager.yml:ro,Z
+Volume=alertmanager-data:/alertmanager:Z
+Memory=128M
+HealthCmd=wget -qO /dev/null http://127.0.0.1:9093/-/healthy
+HealthInterval=60s
+HealthStartPeriod=30s
+HealthOnFailure=kill
+Pod=monitoring.pod

@@ -1,0 +1,14 @@
+[Container]
+Image={{ monitoring_service_grafana_image }}
+ContainerName=monitoring-grafana
+EnvironmentFile=./configs/grafana.env
+Volume=./configs/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro,Z
+Volume=./configs/grafana-dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro,Z
+Volume=./configs/dashboards/:/etc/grafana/provisioning/dashboards/home-server/:ro,Z
+Volume=grafana-data:/var/lib/grafana:Z
+Memory=384M
+HealthCmd=wget -qO /dev/null http://127.0.0.1:3000/api/health
+HealthInterval=60s
+HealthStartPeriod=60s
+HealthOnFailure=kill
+Pod=monitoring.pod

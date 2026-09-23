@@ -1,0 +1,102 @@
+loki.source.journal "host" {
+  path           = "/var/log/journal"
+  max_age        = "168h"
+  relabel_rules  = loki.relabel.journal.rules
+  forward_to     = [loki.process.sanitize.receiver]
+}
+
+// README.md, "Dropped lines" and "Redaction".
+loki.process "sanitize" {
+  forward_to = [loki.write.local.receiver]
+
+  stage.drop {
+    expression          = ".*is not defined in the config lexicon.*"
+    drop_counter_reason = "nextcloud_config_lexicon"
+  }
+
+  stage.replace {
+    expression = "(?:/s/|/apps/files_sharing/publicpreview/|/lostpassword/(?:reset/form|set)/|/public\\.php/dav/[^/?\\s\"]+/|/apps/files/directEditing/|/ocs/v[12]\\.php/apps/files/api/v1/openlocaleditor/|/apps/photos/public/|/apps/dav/invitation/(?:accept|decline|moreOptions)/|/ocs/v[12]\\.php/apps/activity/api/v2/remote/|/apps/circles/async/|/apps/provisioning_api/mailVerification/[^/?\\s\"]+/)([^/?\\s\"&\\\\]+)"
+    replace    = "<redacted>"
+  }
+
+  stage.replace {
+    expression = "token \\\\?\"([^\"\\\\]+)"
+    replace    = "<redacted>"
+  }
+}
+
+loki.relabel "journal" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+  rule {
+    source_labels = ["__journal__systemd_user_unit"]
+    target_label  = "user_unit"
+  }
+  // A manager's message names its subject in UNIT / USER_UNIT.
+  rule {
+    source_labels = ["__journal_unit"]
+    regex         = "(.+)"
+    target_label  = "unit"
+  }
+  rule {
+    source_labels = ["__journal_user_unit"]
+    regex         = "(.+)"
+    target_label  = "user_unit"
+  }
+  // README.md, "Loki stream limit".
+  rule {
+    source_labels = ["unit"]
+    regex         = "(run-.+|libpod-.+|session-.+|[0-9a-f]{64}-.+)\\.(service|scope|timer)"
+    target_label  = "unit"
+    replacement   = "transient"
+  }
+  rule {
+    source_labels = ["user_unit"]
+    regex         = "(run-.+|libpod-.+|session-.+|[0-9a-f]{64}-.+)\\.(service|scope|timer)"
+    target_label  = "user_unit"
+    replacement   = "transient"
+  }
+  rule {
+    source_labels = ["__journal__transport"]
+    target_label  = "transport"
+  }
+  // README.md, "Labels": journald sets _UID, the sender cannot.
+  rule {
+    source_labels = ["__journal__uid"]
+    target_label  = "emitter_uid"
+  }
+{% for svc in base_setup_services %}
+  rule {
+    source_labels = ["__journal__uid"]
+    regex         = "{{ svc.uid }}"
+    target_label  = "service"
+    replacement   = "{{ svc.name }}"
+  }
+{% endfor %}
+  rule {
+    source_labels = ["__journal_syslog_identifier"]
+    target_label  = "syslog_identifier"
+  }
+  rule {
+    source_labels = ["__journal_container_name"]
+    target_label  = "container"
+  }
+  rule {
+    source_labels = ["__journal_priority"]
+    target_label  = "priority"
+  }
+  rule {
+    target_label = "job"
+    replacement  = "systemd-journal"
+  }
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://127.0.0.1:3100/loki/api/v1/push"
+  }
+}

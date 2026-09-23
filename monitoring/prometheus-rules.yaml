@@ -1,0 +1,152 @@
+groups:
+  - name: host
+    interval: 30s
+    rules:
+      - alert: TargetDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Scrape target {{ $labels.job }} is down"
+
+      - alert: HostMemoryPressure
+        expr: rate(node_pressure_memory_stalled_seconds_total[5m]) > 0.1
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "All tasks stalled on memory {{ $value | humanizePercentage }} of the time"
+
+      - alert: OomKill
+        expr: increase(node_vmstat_oom_kill[5m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "The kernel OOM killer ended a process"
+          description: "`journalctl -k | grep -B3 'Killed process'` names the process and the container's unit."
+
+      - alert: ZramFull
+        expr: (1 - node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes) > 0.8 and node_memory_SwapTotal_bytes > 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "zram swap is {{ $value | humanizePercentage }} full"
+
+      - alert: HostLowDiskSpace
+        expr: node_filesystem_avail_bytes{mountpoint="/var"} / node_filesystem_size_bytes{mountpoint="/var"} < 0.10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "/var is at {{ $value | humanizePercentage }} free"
+
+      - alert: HostDiskFillsSoon
+        expr: predict_linear(node_filesystem_avail_bytes{mountpoint="/var"}[6h], 3 * 86400) < 0
+        for: 6h
+        labels:
+          severity: warning
+        annotations:
+          summary: "/var fills within three days at the current rate"
+
+      - alert: BtrfsDeviceErrors
+        expr: increase(node_btrfs_device_errors_total[1h]) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Btrfs counted {{ $labels.type }} errors on {{ $labels.device }}"
+          description: "`btrfs device stats` on the host. A disk that logs errors loses data next."
+
+      - alert: HostHighTemperature
+        expr: node_hwmon_temp_celsius > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sensor {{ $labels.chip }} is above 85 °C"
+
+      - alert: ClockNotSynchronised
+        expr: node_timex_sync_status == 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The host clock is not synchronised; snapshot dates and retention follow it"
+
+      - alert: HostBooted
+        expr: time() - node_boot_time_seconds < 900
+        labels:
+          severity: info
+        annotations:
+          summary: "The host booted {{ $value | humanizeDuration }} ago"
+
+  - name: public
+    interval: 60s
+    rules:
+      - alert: PublicUrlDown
+        expr: probe_success == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.instance }} fails the probe (DNS, TLS, WAF or backend)"
+
+      - alert: CertificateExpiresSoon
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 14
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "TLS certificate of {{ $labels.instance }} expires in {{ $value | printf \"%.0f\" }} days"
+
+      - alert: CertificateExpiring
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 3
+        for: 1h
+        labels:
+          severity: critical
+        annotations:
+          summary: "TLS certificate of {{ $labels.instance }} expires in {{ $value | printf \"%.1f\" }} days"
+
+  - name: monitoring
+    interval: 60s
+    rules:
+      - alert: LogShippingStopped
+        expr: (sum(rate(loki_write_sent_entries_total[30m])) or vector(0)) == 0
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Alloy has sent no log line to Loki for 30 minutes"
+          description: "Every log alert is blind and held back. Check monitoring-alloy and monitoring-loki; both stay up when shipping stops."
+
+      - alert: LokiDiscardingLogs
+        expr: sum by (reason) (increase(loki_discarded_samples_total{reason=~"stream_limit|rate_limited|per_stream_rate_limit"}[15m])) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Loki discards log lines ({{ $labels.reason }}); the log alerts miss them"
+
+      - alert: RuleEvaluationFailing
+        expr: increase({__name__=~"prometheus_rule_evaluation_failures_total|loki_prometheus_rule_evaluation_failures_total"}[15m]) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "The {{ $labels.job }} rule group {{ $labels.rule_group }} fails to evaluate; its alerts cannot fire"
+
+      - alert: TextfileScrapeError
+        expr: node_textfile_scrape_error > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "node-exporter cannot read a file in /var/lib/node-textfile; the backup, snapshot and dump freshness alerts are blind"
+
+      - alert: AlertDeliveryFailing
+        expr: increase(alertmanager_notifications_failed_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Alertmanager cannot deliver to {{ $labels.integration }}: alerts are being dropped"
+          description: "Check ntfy's token. README.md, \"Reaching ntfy\"."

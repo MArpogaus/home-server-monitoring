@@ -1,0 +1,17 @@
+---
+monitoring_service_grafana_image: "docker.io/grafana/grafana:13.2.2"
+monitoring_service_loki_image: "docker.io/grafana/loki:3.7.8"
+monitoring_service_alloy_image: "docker.io/grafana/alloy:v1.19.2"
+monitoring_service_prometheus_image: "docker.io/prom/prometheus:v3.14.0"
+monitoring_service_alertmanager_image: "docker.io/prom/alertmanager:v0.34.1"
+monitoring_service_node_exporter_image: "docker.io/prom/node-exporter:v1.12.1"
+monitoring_service_blackbox_image: "docker.io/prom/blackbox-exporter:v0.28.0"
+
+monitoring_service_probe_urls: []
+
+monitoring_service_grafana_admin_password: ""
+
+monitoring_service_ntfy_base_url: "http://127.0.0.1:8081"
+monitoring_service_ntfy_password: ""
+monitoring_service_ntfy_token: ""
+monitoring_service_ntfy_image: "docker.io/binwiederhier/ntfy:v2.28.0"

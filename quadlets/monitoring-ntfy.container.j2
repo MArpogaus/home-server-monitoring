@@ -1,0 +1,18 @@
+[Container]
+Image={{ monitoring_service_ntfy_image }}
+ContainerName=monitoring-ntfy
+Environment=NTFY_LISTEN_HTTP=:8081
+Environment=NTFY_BASE_URL={{ monitoring_service_ntfy_base_url }}
+Environment=NTFY_BEHIND_PROXY=true
+Environment=NTFY_CACHE_FILE=/var/cache/ntfy/cache.db
+Environment=NTFY_CACHE_DURATION=72h
+Volume=ntfy-cache:/var/cache/ntfy:Z
+EnvironmentFile=./configs/ntfy-auth.env
+Volume=ntfy-data:/var/lib/ntfy:Z
+Exec=serve
+Memory=128M
+HealthCmd=wget -qO /dev/null http://127.0.0.1:8081/v1/health
+HealthInterval=60s
+HealthStartPeriod=30s
+HealthOnFailure=kill
+Pod=monitoring.pod
