@@ -140,7 +140,7 @@
     stdin: "{{ monitoring_service_grafana_admin_password }}"
     stdin_add_newline: false
   become: true
-  become_user: "{{ service_user }}"
+  become_user: "{{ service_name }}"
   when: monitoring_service_grafana_login.status == 401
   changed_when: true
   no_log: true

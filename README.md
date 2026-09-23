@@ -338,8 +338,8 @@ any of them.
 
 ## Role contract
 
-Inherited from `site.yml`: `service_name`, `service_user`, `service_home`,
-`service_repo`, and `base_setup_services`. The role hands the collected
+`site.yml` passes `service_name`, `service_home` and `service_repo`. The role
+also reads `base_setup_services` from the group vars. The role hands the collected
 monitoring files to `quadlet_service` from `home-server` as
 `quadlet_service_extra_files`. That role stages them with `quadlets/`, templates
 the `.j2` files and restarts the pod when a file changed.
