@@ -178,11 +178,14 @@ other label.
 | `priority` | `PRIORITY` | yes |
 | `transport` | `_TRANSPORT` | no |
 | `emitter_uid` | `_UID` | no |
-| `service` | `_UID` equal to the uid of an entry in `base_setup_services` | no |
+| `service` | `_SYSTEMD_OWNER_UID`, else `_UID`, equal to the uid of an entry in `base_setup_services` | no |
 
-`service` covers what a service user's own processes write: its user manager,
-and the output of its containers (`LogDriver=passthrough`). A process inside a
-container that writes to `/dev/log` runs under a subuid and gets no `service`.
+`service` covers every line from a service user's processes: its user manager,
+the output of its containers (`LogDriver=passthrough`), and what a container
+writes to `/dev/log`. journald reads `_SYSTEMD_OWNER_UID` from the sender's
+cgroup, the service user's `user@<uid>.service`, so a process inside a container
+that runs under a subuid still carries its service's name. Neither field is in
+the message, so the sender cannot choose it.
 
 A manager's message about a unit carries the subject in `UNIT` or `USER_UNIT`,
 so the labels name the unit and not the manager.

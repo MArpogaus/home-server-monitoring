@@ -68,14 +68,14 @@ loki.relabel "journal" {
     source_labels = ["__journal__uid"]
     target_label  = "emitter_uid"
   }
-{% for svc in base_setup_services %}
+{% for field in ['__journal__uid', '__journal__systemd_owner_uid'] %}{% for svc in base_setup_services %}
   rule {
-    source_labels = ["__journal__uid"]
+    source_labels = ["{{ field }}"]
     regex         = "{{ svc.uid }}"
     target_label  = "service"
     replacement   = "{{ svc.name }}"
   }
-{% endfor %}
+{% endfor %}{% endfor %}
   rule {
     source_labels = ["__journal_syslog_identifier"]
     target_label  = "syslog_identifier"
