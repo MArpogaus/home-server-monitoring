@@ -203,12 +203,14 @@ The window of a count rule must outlast its `for:`. One log line makes
 `count_over_time(...[w]) > 0` true for exactly `w`, so a single occurrence
 never reaches `for: w`.
 
-A rule that must not be forgeable pins a label that journald sets:
-`emitter_uid="0"` for PID 1 and root daemons, `service` for a service user's
-manager and container output, `transport` for kernel and audit records. A rule
-on a line written through `/dev/log` can only select on `syslog_identifier`,
-which any container can forge; keep such rules to the service's own
-application log.
+A rule that must not be forgeable pins labels that journald sets:
+`emitter_uid="0"` for PID 1 and root daemons, `transport` for kernel and audit
+records, and `service` plus `transport="journal"` for a service user's manager.
+The manager writes through the journal protocol; a container writes through
+`/dev/log` (`transport="syslog"`) or its output (`transport="stdout"`), so a
+container cannot pass for its manager. A line from `/dev/log` carries its
+service's `service` label, but its `syslog_identifier` is the sender's choice:
+a rule on it trusts every container of that service.
 
 Loki's ruler quotes every rule's match string in its own log, so `loki.yaml`
 runs the server at `warn`.

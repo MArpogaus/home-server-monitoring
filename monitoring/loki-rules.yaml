@@ -6,7 +6,7 @@ groups:
         expr: |
           sum by (service, user_unit) (
             count_over_time(
-              {syslog_identifier="systemd", service=~".+", user_unit=~".+", user_unit!="transient"}
+              {syslog_identifier="systemd", transport="journal", service=~".+", user_unit=~".+", user_unit!="transient"}
                 |= "Scheduled restart job" [15m]
             )
           ) > 5
@@ -21,7 +21,7 @@ groups:
         expr: |
           sum by (service, user_unit) (
             count_over_time(
-              {syslog_identifier="systemd", service=~".+", user_unit=~".+", user_unit!="transient"}
+              {syslog_identifier="systemd", transport="journal", service=~".+", user_unit=~".+", user_unit!="transient"}
                 |~ "(?i)failed with result" [30m]
             )
           ) > 0
