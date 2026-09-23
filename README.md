@@ -5,7 +5,7 @@ and ntfy in one rootless Podman pod, with an Ansible role that deploys them.
 
 Alloy reads the host journal and sends it to Loki. Prometheus and Loki both
 raise alerts. Alertmanager sends each one to ntfy, which the phone reads.
-`home-server-core` prepares the host. Every repository of the deployment brings
+`home-server` prepares the host. Every repository of the deployment brings
 its own rules and dashboards: see "Monitoring files of a repository".
 
 ## Architecture
@@ -118,7 +118,7 @@ monitoring/
   alloy-redact.txt        values Alloy redacts
 ```
 
-The role collects the directory from `home-server-core` and from the repository
+The role collects the directory from `home-server` and from the repository
 of each entry in `base_setup_services`, on the controller, at every deploy. The
 rule files go out verbatim: they are not templates. Each dashboard goes out with
 the link bar that the role adds (see below). Each repository becomes one
@@ -153,7 +153,7 @@ A rule obeys these conventions:
   the sender cannot write ("Writing a log rule").
 - A dashboard carries the tag `home-server` and no `links`. The role writes one
   link bar into every dashboard it deploys: this repository's dashboards first,
-  then `home-server-core`'s, then each service's in the order of
+  then `home-server`'s, then each service's in the order of
   `base_setup_services`. Every page shows the same buttons in the same place,
   the current one included. Dashboards use the datasource uids `prometheus` and
   `loki`.
@@ -212,7 +212,7 @@ runs the server at `warn`.
 | `info` | An event | 2 | every 1 h while it fires | no |
 
 The rules are in `*/monitoring/*-rules.yaml` of every repository: this
-repository's cover the host and the monitoring itself, `home-server-core`'s the
+repository's cover the host and the monitoring itself, `home-server`'s the
 host jobs, and each service its own. A rule's `summary` is the notification
 text.
 
@@ -340,7 +340,7 @@ any of them.
 
 Inherited from `site.yml`: `service_name`, `service_user`, `service_home`,
 `service_repo`, and `base_setup_services`. The role hands the collected
-monitoring files to `quadlet_service` from `home-server-core` as
+monitoring files to `quadlet_service` from `home-server` as
 `quadlet_service_extra_files`. That role stages them with `quadlets/`, templates
 the `.j2` files and restarts the pod when a file changed.
 
