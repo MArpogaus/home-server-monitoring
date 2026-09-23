@@ -56,10 +56,10 @@ Grafana's datasource proxy with the admin login:
 `http://127.0.0.2:3000/api/datasources/proxy/uid/loki/loki/api/v1/...`. Loki
 refuses delete requests (`deletion_mode: disabled`).
 
-Reach Grafana with `ssh -L 3000:127.0.0.2:3000 core@host`, user `admin`,
-password `monitoring_service_grafana_admin_password`. The image's sshd forbids
-port forwarding, and the host's own task file gives the admin user the local
-kind back.
+`home-server/README.md`, "Interfaces", has the addresses and logins of Grafana
+and ntfy. SecureBlue's sshd forbids port forwarding;
+`platform/secureblue.yml` in `home-server` gives the admin user the local kind
+back.
 
 The pod mounts every config file read-only, and `quadlet_service` repairs drift
 on the next deploy. Loki has no health check: its image carries neither `wget`
@@ -134,9 +134,9 @@ patterns apply only to the lines of its own service (`service` label, see
 sender writes into a line cannot drop it. Redaction applies to every line,
 because another producer can carry the same value: the proxy logs the path of a
 Nextcloud share link. A redaction's capture group matches only the value, never
-quotes or whitespace, so it cannot swallow the rest of a line. A line that matches a pattern in `alloy-drop.txt` is
-dropped, counted under the repository's name in
-`loki_process_dropped_lines_total`. In a line that matches a pattern in
+quotes or whitespace, so it cannot swallow the rest of a line. A line that
+matches a pattern in `alloy-drop.txt` is dropped, counted under the repository's
+name in `loki_process_dropped_lines_total`. In a line that matches a pattern in
 `alloy-redact.txt`, the pattern's first capture group becomes `<redacted>`, so a
 repository keeps its own credentials out of Loki. The owning repository's README
 says what each pattern is for.
@@ -279,12 +279,10 @@ allow rule would open every D-Bus service to a container.
 ## Reaching ntfy
 
 ntfy listens on the pod loopback. The pod publishes it on the host's
-`127.0.0.1:8081`. The phone reaches it through an SSH tunnel
-(`ssh -L 8081:localhost:8081 core@host`) or through the reverse proxy, which
-serves ntfy on a name of its own with TLS. Set
-`monitoring_service_ntfy_base_url` to that address, so that links in a
-notification point at it. Subscribe to the topic `alerts` with the user `ntfy`
-and `monitoring_service_ntfy_password`.
+`127.0.0.1:8081`. The phone reaches it through an SSH tunnel or through the
+reverse proxy, which serves ntfy on a name of its own with TLS.
+`monitoring_service_ntfy_base_url` is that address, so that links in a
+notification point at it.
 
 ntfy does its own authentication (`NTFY_AUTH_*`, default `deny-all`). One user
 is for the phone and one token is for Alertmanager. Every start syncs both into
@@ -324,14 +322,9 @@ run0 --user=monitoring -- bash -c 'podman exec monitoring-alertmanager amtool --
 
 ## Configuration
 
-| Variable | Default | Controls |
-|---|---|---|
-| `monitoring_service_*_image` | see `defaults/main.yml` | Pinned image tags; `AutoUpdate=registry` follows the digest of the tag |
-| `monitoring_service_ntfy_base_url` | loopback | The address the phone uses |
-| `monitoring_service_grafana_admin_password` | none, required | Grafana's admin password. A deploy tries it and resets the live one when the login returns 401 |
-| `monitoring_service_probe_urls` | `[]` | Public URLs the blackbox exporter probes every minute; `https://` only, 2xx passes |
-| `monitoring_service_ntfy_password` | required | The phone's login, user `ntfy` |
-| `monitoring_service_ntfy_token` | required | Alertmanager's and deploy.sh's bearer token (`tk_` + 29 lowercase alphanumerics) |
+`home-server/README.md`, "Variables", lists what a deployment sets for this
+role. The image tags are the `monitoring_service_*_image` defaults in
+`defaults/main.yml`; `AutoUpdate=registry` follows the digest of each tag.
 
 ### File modes
 
@@ -347,8 +340,8 @@ any of them.
 ## Role contract
 
 `site.yml` passes `service_name`, `service_home` and `service_repo`. The role
-also reads `base_setup_services` from the group vars. The role hands the collected
-monitoring files to `quadlet_service` from `home-server` as
+also reads `base_setup_services` from the group vars. The role hands the
+collected monitoring files to `quadlet_service` from `home-server` as
 `quadlet_service_extra_files`. That role stages them with `quadlets/`, templates
 the `.j2` files and restarts the pod when a file changed.
 
