@@ -77,10 +77,12 @@ container start a `libpod-<id>.scope`, and every health check a
 `<container id>-<n>.timer` and `.service`. `loki.relabel "journal"` rewrites
 all four to `transient`.
 
-A compromised container can still reach the limit on purpose, because
-`syslog_identifier` has no bound. This project accepts that risk:
-sender-controlled labels are what make the log useful per container, and
-`LokiDiscardingLogs` fires.
+A sender picks its own `SYSLOG_IDENTIFIER`, so that label is bounded too: it
+keeps only the identifiers that a collected rule or dashboard selects, and every
+other identifier becomes `other`. The role reads them from the
+`syslog_identifier` matchers in every repository's rules and dashboards, as
+literals or `a|b` alternations. A new rule on a new identifier therefore keeps
+its lines, and a container that invents identifiers adds one stream at most.
 
 Loki answers a stream above the limit with 429, and Alloy backs off up to five
 minutes per attempt. When the stream count is below the limit again, restart
@@ -178,7 +180,7 @@ other label.
 |---|---|---|
 | `job` | always `systemd-journal` | no |
 | `unit`, `user_unit` | `UNIT`/`USER_UNIT`, else `_SYSTEMD_UNIT`/`_SYSTEMD_USER_UNIT` | yes |
-| `syslog_identifier` | `SYSLOG_IDENTIFIER` | yes |
+| `syslog_identifier` | `SYSLOG_IDENTIFIER` if a rule or dashboard selects it, else `other` | yes |
 | `container` | `CONTAINER_NAME` | yes |
 | `priority` | `PRIORITY` | yes |
 | `transport` | `_TRANSPORT` | no |

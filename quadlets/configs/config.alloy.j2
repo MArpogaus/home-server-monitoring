@@ -82,9 +82,19 @@ loki.relabel "journal" {
     replacement   = "{{ svc.name }}"
   }
 {% endfor %}{% endfor %}
+  // README.md, "Loki stream limit": only the idents a rule or a dashboard
+  // selects become label values.
   rule {
     source_labels = ["__journal_syslog_identifier"]
+    regex         = {{ ('(' ~ (monitoring_service_idents | default([]) | map('regex_escape') | join('|')) ~ ')') | to_json }}
     target_label  = "syslog_identifier"
+  }
+  rule {
+    source_labels = ["__journal_syslog_identifier", "syslog_identifier"]
+    separator     = ";"
+    regex         = ".+;"
+    target_label  = "syslog_identifier"
+    replacement   = "other"
   }
   rule {
     source_labels = ["__journal_container_name"]
