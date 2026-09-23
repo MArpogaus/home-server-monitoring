@@ -6,8 +6,8 @@ Environment=NTFY_BASE_URL={{ monitoring_service_ntfy_base_url }}
 Environment=NTFY_BEHIND_PROXY=true
 Environment=NTFY_CACHE_FILE=/var/cache/ntfy/cache.db
 Environment=NTFY_CACHE_DURATION=72h
-Volume=ntfy-cache:/var/cache/ntfy:Z
 EnvironmentFile=./configs/ntfy-auth.env
+Volume=ntfy-cache:/var/cache/ntfy:Z
 Volume=ntfy-data:/var/lib/ntfy:Z
 Exec=serve
 Memory=128M
