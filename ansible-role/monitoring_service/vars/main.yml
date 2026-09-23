@@ -2,3 +2,4 @@
 quadlet_service_config_modes:
   ntfy-auth.env: '0600'
   grafana.env: '0600'
+monitoring_service_repos: "{{ [{'repo': 'home-server', 'name': '', 'dir': playbook_dir}] + base_setup_services }}"

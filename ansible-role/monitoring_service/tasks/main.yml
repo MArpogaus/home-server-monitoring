@@ -42,15 +42,13 @@
   ansible.builtin.set_fact:
     monitoring_service_files: >-
       {{ monitoring_service_files | default([])
-         + [{'src': monitoring_service_src, 'dest': item.1.dest ~ item.0 ~ item.1.suffix}] }}
+         + [{'src': monitoring_service_src, 'dest': item.1.dest ~ item.0.repo ~ item.1.suffix}] }}
   when: monitoring_service_src is exists
-  loop: "{{ (['home-server'] + base_setup_services | map(attribute='repo') | list) | product(monitoring_service_kinds) | list }}"
+  loop: "{{ monitoring_service_repos | product(monitoring_service_kinds) | list }}"
   loop_control:
-    label: "{{ item.0 }} {{ item.1.src }}"
+    label: "{{ item.0.repo }} {{ item.1.src }}"
   vars:
-    monitoring_service_src: >-
-      {{ (playbook_dir if item.0 == 'home-server' else (service_repo | dirname) ~ '/home-server-' ~ item.0)
-         ~ '/monitoring/' ~ item.1.src }}
+    monitoring_service_src: "{{ item.0.dir }}/monitoring/{{ item.1.src }}"
     monitoring_service_kinds:
       - {src: prometheus-rules.yaml, dest: configs/rules/prometheus/, suffix: .yaml}
       - {src: loki-rules.yaml, dest: configs/rules/loki/, suffix: .yaml}
@@ -59,29 +57,26 @@
   ansible.builtin.set_fact:
     monitoring_service_alloy: >-
       {{ monitoring_service_alloy | default([])
-         + [{'kind': item.1, 'repo': item.0,
-             'service': base_setup_services | selectattr('repo', 'eq', item.0) | map(attribute='name') | first | default(''),
+         + [{'kind': item.1, 'repo': item.0.repo, 'service': item.0.name,
              'patterns': lookup('ansible.builtin.file', monitoring_service_alloy_file).splitlines()
                          | map('trim') | reject('match', '#') | reject('eq', '') | list}] }}
   when: monitoring_service_alloy_file is exists
-  loop: "{{ (['home-server'] + base_setup_services | map(attribute='repo') | list) | product(['drop', 'redact']) | list }}"
+  loop: "{{ monitoring_service_repos | product(['drop', 'redact']) | list }}"
   loop_control:
-    label: "{{ item.0 }} {{ item.1 }}"
+    label: "{{ item.0.repo }} {{ item.1 }}"
   vars:
-    monitoring_service_alloy_file: >-
-      {{ (playbook_dir if item.0 == 'home-server' else (service_repo | dirname) ~ '/home-server-' ~ item.0)
-         ~ '/monitoring/alloy-' ~ item.1 ~ '.txt' }}
+    monitoring_service_alloy_file: "{{ item.0.dir }}/monitoring/alloy-{{ item.1 }}.txt"
 
-- name: Find the dashboards, the platform's first
+- name: Find the dashboards, this repository's first
   ansible.builtin.set_fact:
     monitoring_service_dashboard_files: >-
       {{ monitoring_service_dashboard_files | default([])
-         + ([item] | product(query('ansible.builtin.fileglob', monitoring_service_dashboard_dir ~ '/*.json') | sort) | list) }}
-  when: monitoring_service_dashboard_dir is exists
-  loop: "{{ ['monitoring', 'home-server'] + (base_setup_services | map(attribute='repo') | reject('eq', 'monitoring') | list) }}"
-  vars:
-    monitoring_service_dashboard_dir: >-
-      {{ (playbook_dir if item == 'home-server' else (service_repo | dirname) ~ '/home-server-' ~ item) ~ '/monitoring/dashboards' }}
+         + ([item.repo] | product(query('ansible.builtin.fileglob', item.dir ~ '/monitoring/dashboards/*.json') | sort) | list) }}
+  when: (item.dir ~ '/monitoring/dashboards') is exists
+  loop: "{{ monitoring_service_repos | selectattr('repo', 'eq', 'monitoring') | list
+            + monitoring_service_repos | rejectattr('repo', 'eq', 'monitoring') | list }}"
+  loop_control:
+    label: "{{ item.repo }}"
 
 - name: Read the dashboards
   ansible.builtin.set_fact:
