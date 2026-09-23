@@ -8,13 +8,19 @@ loki.source.journal "host" {
 // README.md, "Monitoring files of a repository".
 loki.process "sanitize" {
   forward_to = [loki.write.local.receiver]
-{% for f in monitoring_service_alloy | default([]) if f.kind == 'drop' %}{% for p in f.patterns %}
+{% for f in monitoring_service_alloy | default([]) if f.kind == 'drop' %}
 
-  stage.drop {
-    expression          = {{ p | to_json }}
-    drop_counter_reason = {{ f.repo | to_json }}
+  stage.match {
+    selector = {{ ('{service="' ~ f.service ~ '"}') | to_json }}
+{% for p in f.patterns %}
+
+    stage.drop {
+      expression          = {{ p | to_json }}
+      drop_counter_reason = {{ f.repo | to_json }}
+    }
+{% endfor %}
   }
-{% endfor %}{% endfor %}
+{% endfor %}
 {% for f in monitoring_service_alloy | default([]) if f.kind == 'redact' %}{% for p in f.patterns %}
 
   stage.replace {

@@ -128,8 +128,13 @@ next deploy. Only this role writes the rules, as the `monitoring` user, so no
 service can change the alerts of another.
 
 The two Alloy files hold one RE2 regex per line; `#` lines and blank lines do
-not count. Alloy applies them to every journal line, whoever wrote it, before
-the line reaches Loki. A line that matches a pattern in `alloy-drop.txt` is
+not count. Alloy applies them before the line reaches Loki. A repository's drop
+patterns apply only to the lines of its own service (`service` label, see
+"Labels"; `home-server`'s own apply to lines without one), so text that another
+sender writes into a line cannot drop it. Redaction applies to every line,
+because another producer can carry the same value: the proxy logs the path of a
+Nextcloud share link. A redaction's capture group matches only the value, never
+quotes or whitespace, so it cannot swallow the rest of a line. A line that matches a pattern in `alloy-drop.txt` is
 dropped, counted under the repository's name in
 `loki_process_dropped_lines_total`. In a line that matches a pattern in
 `alloy-redact.txt`, the pattern's first capture group becomes `<redacted>`, so a

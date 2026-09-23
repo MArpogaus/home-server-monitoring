@@ -60,6 +60,7 @@
     monitoring_service_alloy: >-
       {{ monitoring_service_alloy | default([])
          + [{'kind': item.1, 'repo': item.0,
+             'service': base_setup_services | selectattr('repo', 'eq', item.0) | map(attribute='name') | first | default(''),
              'patterns': lookup('ansible.builtin.file', monitoring_service_alloy_file).splitlines()
                          | map('trim') | reject('match', '#') | reject('eq', '') | list}] }}
   when: monitoring_service_alloy_file is exists
