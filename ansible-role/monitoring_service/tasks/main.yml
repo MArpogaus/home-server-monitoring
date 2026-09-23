@@ -59,10 +59,12 @@
   ansible.builtin.set_fact:
     monitoring_service_dashboard_files: >-
       {{ monitoring_service_dashboard_files | default([])
-         + ([item] | product(query('ansible.builtin.fileglob',
-             (playbook_dir if item == 'core' else (service_repo | dirname) ~ '/home-server-' ~ item)
-             ~ '/monitoring/dashboards/*.json') | sort) | list) }}
+         + ([item] | product(query('ansible.builtin.fileglob', monitoring_service_dashboard_dir ~ '/*.json') | sort) | list) }}
+  when: monitoring_service_dashboard_dir is exists
   loop: "{{ ['monitoring', 'core'] + (base_setup_services | map(attribute='repo') | reject('eq', 'monitoring') | list) }}"
+  vars:
+    monitoring_service_dashboard_dir: >-
+      {{ (playbook_dir if item == 'core' else (service_repo | dirname) ~ '/home-server-' ~ item) ~ '/monitoring/dashboards' }}
 
 - name: Read the dashboards
   ansible.builtin.set_fact:
