@@ -54,3 +54,5 @@ The next deploy removes the drop-in.
 - Ansible variables are `<role>_*`.
 - Renovate updates the container image tags in the role defaults, through the
   preset that `.github/renovate.json` extends.
+- `home-server` checks this repository out at `services/monitoring`.
+  `home-server/CONTRIBUTING.md` has how a change here reaches a deploy.
