@@ -119,7 +119,7 @@ monitoring/
 ```
 
 The role collects the directory from `home-server` and from each service's
-checkout at `home-server/services/<repo>`, on the controller, at every deploy.
+checkout at `home-server/services/<name>`, on the controller, at every deploy.
 The rule files go out verbatim: they are not templates. Each dashboard goes out
 with the link bar that the role adds (see below). Each repository becomes one
 Prometheus rule file, one Loki rule namespace and one Grafana folder, all named
@@ -346,8 +346,9 @@ any of them.
 ## Role contract
 
 `site.yml` passes `service_name`, `service_home` and `service_repo`. The role
-also reads `base_setup_services`, and needs the `repo` and `dir` of every entry,
-which a pre-task in `home-server`'s `site.yml` adds. It hands the collected
+also reads `base_setup_services`, and needs the `dir` of every entry, which a
+pre-task in `home-server`'s `site.yml` adds. Each service's name is also its
+repository's name. It hands the collected
 monitoring files to `home-server`'s `quadlet_service` as
 `quadlet_service_extra_files` (`home-server/docs/DESIGN.md`).
 
