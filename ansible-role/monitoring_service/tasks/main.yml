@@ -128,27 +128,6 @@
   retries: 120
   delay: 10
 
-- name: Try the Grafana admin password
-  ansible.builtin.uri:
-    url: http://127.0.0.2:3000/api/org
-    user: admin
-    password: "{{ monitoring_service_grafana_admin_password }}"
-    force_basic_auth: true
-    status_code: [200, 401]
-  register: monitoring_service_grafana_login
-  no_log: true
-
-- name: Set the Grafana admin password
-  ansible.builtin.command:
-    cmd: podman exec -i monitoring-grafana grafana cli admin reset-admin-password --password-from-stdin
-    stdin: "{{ monitoring_service_grafana_admin_password }}"
-    stdin_add_newline: false
-  become: true
-  become_user: "{{ service_name }}"
-  when: monitoring_service_grafana_login.status == 401
-  changed_when: true
-  no_log: true
-
 - name: Wait for Loki to answer through Grafana
   ansible.builtin.uri:
     url: http://127.0.0.2:3000/api/datasources/proxy/uid/loki/ready
