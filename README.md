@@ -243,9 +243,10 @@ This repository's rules:
 
 Alertmanager groups by every label (`group_by: ['...']`), so each alert is a
 group of its own. A group shares only the annotations common to all its alerts,
-and ntfy renders a missing one as `<no value>`. Prometheus labels its alerts `source: prometheus`. While
-`LogShippingStopped` fires, Alertmanager holds back every alert without that
-label, so a blind Loki does not page its log rules as failures.
+and ntfy renders a missing one as `<no value>`. Prometheus labels its alerts
+`source: prometheus`. While `LogShippingStopped` fires, Alertmanager holds back
+every alert without that label, so a blind Loki does not page its log rules as
+failures.
 
 A notifier on this machine cannot report that the machine is down. This
 project has no heartbeat to a system off the box.
@@ -271,10 +272,11 @@ allow rule would open every D-Bus service to a container.
 
 ntfy listens on the pod loopback. The pod publishes it on the host's
 `127.0.0.1:8081`. The phone reaches it through an SSH tunnel
-(`ssh -L 8081:localhost:8081 core@host`) or through BunkerWeb, which serves
-ntfy on a name of its own with TLS. Set `monitoring_service_ntfy_base_url` to that address,
-so that links in a notification point at it. Subscribe to the topic `alerts`
-with the user `ntfy` and `monitoring_service_ntfy_password`.
+(`ssh -L 8081:localhost:8081 core@host`) or through the reverse proxy, which
+serves ntfy on a name of its own with TLS. Set
+`monitoring_service_ntfy_base_url` to that address, so that links in a
+notification point at it. Subscribe to the topic `alerts` with the user `ntfy`
+and `monitoring_service_ntfy_password`.
 
 ntfy does its own authentication (`NTFY_AUTH_*`, default `deny-all`). One user
 is for the phone and one token is for Alertmanager. Every start syncs both into
