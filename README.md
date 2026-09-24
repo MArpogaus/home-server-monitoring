@@ -74,7 +74,7 @@ role collects them from `home-server` and from each `home-server/services/<name>
   next deploy.
 - A drop pattern applies only to lines of its own `service` label
   (`home-server`'s: lines without one), so another sender cannot drop them.
-  `loki_process_dropped_lines_total` counts the drops per repository.
+  `loki_process_dropped_lines_total` counts the drops per service.
 - A redact pattern applies to every line, because another sender can log the
   same value. Its capture group matches only the value, never quotes or
   whitespace.
