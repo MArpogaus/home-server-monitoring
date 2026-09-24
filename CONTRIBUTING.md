@@ -13,7 +13,7 @@ pre-commit install --install-hooks -t pre-commit -t commit-msg -t pre-push
 
 Plain `pre-commit install` installs the pre-commit stage alone, and the commit
 message and branch hooks then do not run. CI runs the pre-commit stage hooks on
-a push and on a pull request.
+a push and on a pull request to `main` or `dev`.
 
 Every GitHub action is pinned to a commit SHA. Dependabot updates the actions
 and the hook revisions weekly against `dev`. `pinact run -u` updates and
