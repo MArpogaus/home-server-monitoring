@@ -355,6 +355,13 @@ monitoring files to `home-server`'s `quadlet_service` as
 The role also loads a system-wide SELinux module, `alloy_journal_watch`. That
 is the one thing it changes outside its own service user.
 
+## LLM coding tools
+
+This project is developed with LLM-based coding tools. They write most of the
+code and documentation. The maintainer sets the goals and the design, reviews
+every change and is responsible for it. Changes are tested on a VM before they
+reach a host.
+
 ## License
 
 MIT
