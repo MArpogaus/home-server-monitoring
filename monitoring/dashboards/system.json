@@ -114,7 +114,7 @@
           "fields": ""
         }
       },
-      "description": "Alerts Alertmanager holds right now, from Prometheus and Loki rules. The two alert lists below name them with their severity.",
+      "description": "Alerts that Alertmanager holds now, from Prometheus and Loki rules.",
       "id": 2
     },
     {
@@ -190,7 +190,7 @@
           "fields": ""
         }
       },
-      "description": "What auto-reboot-staged.service did on its last nightly run: skipped itself because nothing was staged, rebooted into the staged update, or was refused because a backup held a shutdown inhibitor (AutoRebootBlocked after two refusals).",
+      "description": "Result of the last nightly run of auto-reboot-staged.service: skipped, rebooted or blocked by a backup.",
       "id": 3
     },
     {
@@ -248,7 +248,7 @@
           "fields": ""
         }
       },
-      "description": "Failed container health checks in the last hour. A container restarting after a deploy produces a few; a steady count is a sick container.",
+      "description": "Failed container health checks in the last hour.",
       "id": 4
     },
     {
@@ -306,7 +306,7 @@
           "fields": ""
         }
       },
-      "description": "systemd units that ended in failure in the last 24 h, system and service users. Transient units (run0 calls, Podman's health checks) are not counted.",
+      "description": "System and service-user units that failed in the last 24 h, without transient units.",
       "id": 5
     },
     {
@@ -363,7 +363,7 @@
           "fields": ""
         }
       },
-      "description": "Accepted key logins in the last 24 h. Each one also reaches the phone (SshLogin).",
+      "description": "Accepted key logins in the last 24 h.",
       "id": 6
     },
     {
@@ -421,7 +421,7 @@
           "fields": ""
         }
       },
-      "description": "Refused or abandoned logins in the last 24 h, the lines SshLoginFailed counts (it alerts above 5 in 15 minutes). SSH is LAN-only, so anything here is a device on the LAN or a typo.",
+      "description": "Refused or abandoned logins in the last 24 h, the lines that SshLoginFailed counts.",
       "id": 7
     },
     {
@@ -479,7 +479,7 @@
           "fields": ""
         }
       },
-      "description": "Enforced denials in the last 24 h, without pasta's capability probes at every pod start (harmless, excluded from the alert too). Any denial is worth a look; SelinuxDenials alerts above 20 in 15 minutes.",
+      "description": "Enforced SELinux denials in the last 24 h, without the harmless capability probes of pasta.",
       "id": 8
     },
     {
@@ -537,7 +537,7 @@
           "fields": ""
         }
       },
-      "description": "Processes the kernel killed in the last 24 h for hitting a container's memory ceiling. The OomKill alert fires on each kill; this panel names the process.",
+      "description": "Processes that the kernel killed at a container's memory ceiling in the last 24 h.",
       "id": 9
     },
     {
@@ -620,7 +620,7 @@
           "fields": ""
         }
       },
-      "description": "Age of the last successful backup per target, snapshot per service and database dump, from the textfile metrics the jobs write. Orange at 26 h, red at 30 h, where JobStale fires.",
+      "description": "Age of the last successful backup, snapshot and database dump; JobStale fires at 30 h.",
       "id": 10
     },
     {
@@ -685,7 +685,7 @@
           "fields": ""
         }
       },
-      "description": "Free space on each backup target when its last backup finished. BackupTargetLow alerts below 10 %.",
+      "description": "Free space on each backup target when its last backup finished.",
       "id": 11
     },
     {
@@ -779,7 +779,7 @@
           "sort": "none"
         }
       },
-      "description": "Whether Prometheus got an answer from each target, every 15 s. This is the only health readout for Loki and Alloy: both images ship no shell, so neither container can carry a health check and neither turns green below. A gap means Prometheus itself was not running. TargetDown fires on a red band.",
+      "description": "Whether Prometheus reaches each target; the only health readout for Loki and Alloy.",
       "id": 13
     },
     {
@@ -873,7 +873,7 @@
           "sort": "none"
         }
       },
-      "description": "Every container podman reported on, from its own event log. A deploy shows as a short stopped-starting-healthy sequence on the whole pod; a single red band is one container in trouble. Each point looks back 24 h, so a container that only logged its start still shows that state for a day: with a health check the band turns green at every check, without one it stays blue from the start event onwards. Scrape targets above is the real health of Loki and Alloy.",
+      "description": "Container state from the Podman events, where each point looks back 24 h.",
       "id": 14
     },
     {
@@ -885,7 +885,7 @@
         "w": 12,
         "h": 9
       },
-      "description": "Prometheus rules that fire or are pending right now, with their severity: host, textfile freshness, targets, probes and the monitoring stack.",
+      "description": "Prometheus rules that fire or are pending now.",
       "options": {
         "viewMode": "list",
         "groupMode": "default",
@@ -916,7 +916,7 @@
         "w": 12,
         "h": 9
       },
-      "description": "Loki rules that fire or are pending right now, with their severity: journal-based alerts of every repository.",
+      "description": "Loki rules that fire or are pending now.",
       "options": {
         "viewMode": "list",
         "groupMode": "default",
@@ -1001,7 +1001,7 @@
           "sort": "desc"
         }
       },
-      "description": "Lines the host's own units logged at priority emerg, alert, crit or err, counted per bar. The legend column is the total over the selected range. Login session scopes and container output are excluded: a container's stderr arrives as err.",
+      "description": "Lines at priority err or higher from the host's own units, without session scopes and container output.",
       "id": 18
     },
     {
@@ -1085,7 +1085,7 @@
           "sort": "none"
         }
       },
-      "description": "One band per system job: where it turns blue the job was running, so the width is how long it took. Snapshots run daily and the backup after them. A job that does not succeed for 30 h raises JobStale; a red band raises ScheduledJobFailed. podman-auto-update is a user unit and is not in this band.",
+      "description": "One band per system job: blue while it runs, red when it fails.",
       "id": 19
     },
     {
@@ -1141,7 +1141,7 @@
           "show": false
         }
       },
-      "description": "Which units produced the failure count above, system units by `unit` and container units by `user_unit`. A deploy restarting a pod is the usual source; anything else deserves the log below.",
+      "description": "The units behind the failure count, system units by `unit` and container units by `user_unit`.",
       "transformations": [
         {
           "id": "organize",
@@ -1243,7 +1243,7 @@
           "sort": "desc"
         }
       },
-      "description": "Lines per second Alloy ships to Loki, and lines Loki throws away. Zero sent for 30 minutes is LogShippingStopped; any stream-limit or rate-limit discard is LokiDiscardingLogs. Every log alert is blind to discarded lines.",
+      "description": "Lines per second that Alloy ships to Loki and that Loki discards.",
       "id": 22
     },
     {
@@ -1317,7 +1317,7 @@
           "sort": "desc"
         }
       },
-      "description": "Rule groups that failed to evaluate (RuleEvaluationFailing: their alerts cannot fire) and notifications Alertmanager could not deliver to ntfy (AlertDeliveryFailing: alerts are dropped).",
+      "description": "Rule groups that fail to evaluate and notifications that Alertmanager cannot deliver.",
       "id": 23
     },
     {
@@ -1380,7 +1380,7 @@
         "enableLogDetails": true,
         "prettifyLogMessage": false
       },
-      "description": "Accepted and refused SSH logins, the lines SshLogin and SshLoginFailed read.",
+      "description": "Accepted and refused SSH logins.",
       "id": 25
     },
     {
@@ -1430,7 +1430,7 @@
         "enableLogDetails": true,
         "prettifyLogMessage": false
       },
-      "description": "rpm-ostree stages an OS update; auto-reboot-staged.timer reboots at night when one is staged and no backup holds an inhibitor, and skips itself when nothing is staged; 'Startup finished' is the boot (HostBooted).",
+      "description": "Staged OS updates, nightly reboots and boots.",
       "id": 26
     },
     {
@@ -1480,7 +1480,7 @@
         "enableLogDetails": true,
         "prettifyLogMessage": false
       },
-      "description": "Backups, snapshots and the nightly reboot: start, end and errors. Image updates run in each service user's manager, so they are in Image pulls beside this.",
+      "description": "Start, end and errors of the backups, the snapshots and the nightly reboot.",
       "id": 27
     },
     {
@@ -1530,7 +1530,7 @@
         "enableLogDetails": true,
         "prettifyLogMessage": false
       },
-      "description": "Every image podman fetched: a deploy with a new tag, or podman-auto-update following a tag's digest.",
+      "description": "Every image that Podman pulled, for a deploy or for podman-auto-update.",
       "id": 28
     },
     {
@@ -1580,7 +1580,7 @@
         "enableLogDetails": true,
         "prettifyLogMessage": false
       },
-      "description": "Raw audit and kernel lines. `scontext` names the confined domain; `comm` the program.",
+      "description": "Raw audit and kernel lines; `scontext` names the confined domain.",
       "id": 29
     }
   ]

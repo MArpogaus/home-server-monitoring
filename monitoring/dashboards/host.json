@@ -114,7 +114,7 @@
           "fields": ""
         }
       },
-      "description": "Time since the last boot. auto-reboot-staged reboots at night when rpm-ostree has staged an update.",
+      "description": "Time since the last boot.",
       "id": 2
     },
     {
@@ -178,7 +178,7 @@
           "fields": ""
         }
       },
-      "description": "Share of the four cores not idle, averaged over the last minutes.",
+      "description": "Share of the four cores that are neither idle nor in iowait.",
       "id": 3
     },
     {
@@ -242,7 +242,7 @@
           "fields": ""
         }
       },
-      "description": "5-minute load average divided by the core count. 100 % means one runnable task per core; above that work queues.",
+      "description": "5-minute load average per core; above 100 % work queues.",
       "id": 4
     },
     {
@@ -306,7 +306,7 @@
           "fields": ""
         }
       },
-      "description": "Used = total minus available (MemAvailable already counts reclaimable cache as free). 8 GB host.",
+      "description": "Total minus available memory of the 8 GB host.",
       "id": 5
     },
     {
@@ -370,7 +370,7 @@
           "fields": ""
         }
       },
-      "description": "/var holds containers, service data and snapshots; on ostree the rest of the root is read-only and small. HostLowDiskSpace alerts below 10 % free.",
+      "description": "Used share of /var, which holds the containers, the service data and the snapshots.",
       "id": 6
     },
     {
@@ -434,7 +434,7 @@
           "fields": ""
         }
       },
-      "description": "Maximum over all hwmon sensors. The thin client throttles around 85 \u00b0C (HostHighTemperature).",
+      "description": "Highest reading of all hwmon sensors.",
       "id": 7
     },
     {
@@ -498,7 +498,7 @@
           "fields": ""
         }
       },
-      "description": "Swap on zram, compressed in RAM. ZramFull alerts above 80 % for 15 minutes.",
+      "description": "Used share of the zram swap, which is compressed in RAM.",
       "id": 8
     },
     {
@@ -556,7 +556,7 @@
           "fields": ""
         }
       },
-      "description": "Read, write, flush, corruption and generation errors Btrfs counted over the dashboard range. Any error is the first sign of a failing disk (BtrfsDeviceErrors).",
+      "description": "Errors that Btrfs counted in the dashboard range; any error is the first sign of a failing disk.",
       "id": 9
     },
     {
@@ -626,7 +626,7 @@
           "fields": ""
         }
       },
-      "description": "Whether chrony keeps the kernel clock synchronised. Snapshot names and retention follow the clock (ClockNotSynchronised).",
+      "description": "Whether chrony keeps the kernel clock synchronised.",
       "id": 10
     },
     {
@@ -793,7 +793,7 @@
           "sort": "desc"
         }
       },
-      "description": "Percent of all cores, stacked. iowait rising with the disk-busy panel means storage, not CPU, is the limit.",
+      "description": "Percent of all cores by mode; rising iowait means that storage is the limit.",
       "id": 12
     },
     {
@@ -929,7 +929,7 @@
           "sort": "desc"
         }
       },
-      "description": "Runnable plus uninterruptible tasks. The dashed line is the core count: above it, work queues.",
+      "description": "Runnable and uninterruptible tasks; above the dashed core-count line, work queues.",
       "id": 13
     },
     {
@@ -1039,7 +1039,7 @@
           "sort": "desc"
         }
       },
-      "description": "Cache shrinks under pressure before anything is killed; swap here is zram, so swapping costs CPU, not disk.",
+      "description": "Memory use by kind; swap is zram, so swapping costs CPU, not disk.",
       "id": 14
     },
     {
@@ -1141,7 +1141,7 @@
           "sort": "desc"
         }
       },
-      "description": "Share of wall time in which at least one task stalled on the resource (PSI 'some'), and in which every task stalled on memory ('full'). The red line is HostMemoryPressure on 'memory full'. Sustained io pressure on this thin client means the SSD is the bottleneck.",
+      "description": "Share of time in which tasks waited for CPU, memory or disk (PSI); the red line is the HostMemoryPressure threshold.",
       "id": 15
     },
     {
@@ -1250,7 +1250,7 @@
           "sort": "desc"
         }
       },
-      "description": "/var (everything lives there on ostree; /, /etc and /sysroot are the same disk) and /boot (small, 90 % is normal). Btrfs counts snapshots. The dashed line extrapolates the last 6 h of /var three days ahead; HostDiskFillsSoon fires when it reaches 100 %. The backup targets are on the System log dashboard.",
+      "description": "Used share of /var and /boot; the dashed line extends the 6 h trend of /var three days ahead.",
       "id": 16
     },
     {
@@ -1324,7 +1324,7 @@
           "sort": "desc"
         }
       },
-      "description": "Physical disks only. Reads go up, writes go down, so the two directions never hide each other.",
+      "description": "Reads and writes of the physical disks.",
       "id": 17
     },
     {
@@ -1391,7 +1391,7 @@
           "sort": "desc"
         }
       },
-      "description": "Share of time the device had a request in flight. Near 100 % for minutes means the disk is saturated (backups, previews, Recognize).",
+      "description": "Share of time the disk had a request in flight; near 100 % means it is saturated.",
       "id": 18
     },
     {
@@ -1465,7 +1465,7 @@
           "sort": "desc"
         }
       },
-      "description": "Physical interfaces only; the pods' virtual interfaces are excluded. Backups to the NAS show as out on the LAN interface.",
+      "description": "Traffic of the physical interfaces, without the virtual interfaces of the pods.",
       "id": 19
     },
     {
@@ -1536,7 +1536,7 @@
           "sort": "desc"
         }
       },
-      "description": "Every hwmon sensor. The red line is the alert threshold.",
+      "description": "Every hwmon sensor; the red line is the alert threshold.",
       "id": 20
     },
     {
@@ -1609,7 +1609,7 @@
           "sort": "desc"
         }
       },
-      "description": "Blocked processes are waiting for disk; a steady count above zero matches io pressure above.",
+      "description": "Running processes and processes blocked on disk I/O.",
       "id": 21
     },
     {
@@ -1726,7 +1726,7 @@
           "sort": "desc"
         }
       },
-      "description": "sshd only, from its own unit. SSH is LAN-only and accepts one hardware key, so 'refused' is usually a client that opened a connection and gave up (Connection closed by authenticating user), not an attack. Every accepted login also reaches the phone (SshLogin).",
+      "description": "Connections that sshd accepted and refused.",
       "id": 23
     },
     {
@@ -1797,7 +1797,7 @@
           "show": false
         }
       },
-      "description": "Users that logged in successfully over the dashboard range.",
+      "description": "Users that logged in over SSH in the dashboard range.",
       "transformations": [
         {
           "id": "organize",
@@ -1882,7 +1882,7 @@
           "show": false
         }
       },
-      "description": "Source addresses of successful logins. Only LAN addresses should appear.",
+      "description": "Source addresses of accepted logins; only LAN addresses belong here.",
       "transformations": [
         {
           "id": "organize",
@@ -1967,7 +1967,7 @@
           "show": false
         }
       },
-      "description": "Source addresses of refused or abandoned connections. A stranger here means something on the LAN is probing, because the firewall does not publish port 22.",
+      "description": "Source addresses of refused or abandoned connections.",
       "transformations": [
         {
           "id": "organize",
