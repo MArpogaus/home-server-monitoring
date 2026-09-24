@@ -28,7 +28,6 @@ alerts, and Alertmanager sends them through ntfy to the phone.
 
 ## Specifics
 
-- The containers talk over `127.0.0.1`, because a rootless pod binds IPv4 only.
 - The proxy pod maps only the host's `127.0.0.1`, so it reaches ntfy and
   nothing else of this stack. Grafana is reached through
   `ssh -L 3000:127.0.0.2:3000`.
@@ -69,9 +68,7 @@ role collects them from `home-server` and from each `home-server/services/<name>
 - The rule file, the Loki rule namespace and the Grafana folder carry the
   service name (`home-server` for the host repository). Only this role writes
   rules, so a service cannot change the alerts of another.
-- The files go into the service's Quadlet archive. A changed archive replaces
-  the Quadlet directory on the host, so a removed file leaves the host at the
-  next deploy.
+- The files go into this pod's Quadlet archive.
 - A drop pattern applies only to lines of its own `service` label
   (`home-server`'s: lines without one), so another sender cannot drop them.
   `loki_process_dropped_lines_total` counts the drops per service.
