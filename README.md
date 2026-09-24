@@ -41,6 +41,8 @@ alerts, and Alertmanager sends them through ntfy to the phone.
 - `container_logreader_t` has no `watch` on the journal directory, and without
   it Alloy reads the journal once and then stays silent. The role loads
   `files/alloy_journal_watch.cil`, its one change outside the service user.
+  Alloy sets the watch once at start, so the role restarts the pod in the run
+  that loads the module.
 - node-exporter mounts `/` with `rslave`, so a backup target that an automount
   mounts later also appears.
 - Unit state comes from the journal, because SELinux denies `container_t` the
