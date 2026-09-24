@@ -8,7 +8,8 @@
     fail_msg: >-
       Set monitoring_service_ntfy_password, monitoring_service_ntfy_token
       (tk_ plus 29 lowercase letters or digits) and
-      monitoring_service_grafana_admin_password. home-server/README.md, "Configuration".
+      monitoring_service_grafana_admin_password. home-server-monitoring/README.md,
+      "Configuration".
     quiet: true
 
 - name: Ensure the local SELinux policy directory exists
