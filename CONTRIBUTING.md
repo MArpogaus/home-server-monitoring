@@ -47,9 +47,11 @@ dashboard.
 
 Copy `monitoring/dashboards/` into the VM's `configs/dashboards/monitoring/`.
 Grafana reloads them within ten seconds, so one iteration costs less than a
-minute. A copied dashboard has no link bar until the next deploy adds it.
+minute. A copied dashboard has no link bar until a deploy that changes this service's
+files adds it.
 
-The next deploy removes the drop-in.
+A deploy that changes this service's files removes the drop-in. Otherwise
+delete it by hand.
 
 ## Checks in this repository
 
