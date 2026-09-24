@@ -38,8 +38,9 @@ short sentences, one meaning per word, and the condition before the command.
 
 Join `grafana-image-renderer` to the monitoring pod on the test VM. Set
 `SERVER_ADDR=:8082` and a shared `AUTH_TOKEN`. Give Grafana
-`GF_RENDERING_SERVER_URL`, `_CALLBACK_URL` and `_RENDERER_TOKEN` through a
-`monitoring-grafana.container.d` drop-in.
+`GF_RENDERING_SERVER_URL`, `GF_RENDERING_CALLBACK_URL` and
+`GF_RENDERING_RENDERER_TOKEN` through a `monitoring-grafana.container.d`
+drop-in.
 
 Then request `GET /render/d/<uid>/<uid>?kiosk&width=1600&height=-1` for each
 dashboard.
@@ -57,4 +58,4 @@ The next deploy removes the drop-in.
 - Renovate updates the container image tags in the role defaults, through the
   preset that `.github/renovate.json` extends.
 - `home-server` checks this repository out at `services/monitoring`.
-  `home-server/CONTRIBUTING.md` has how a change here reaches a deploy.
+  `home-server/CONTRIBUTING.md` says how a change here reaches a deploy.
