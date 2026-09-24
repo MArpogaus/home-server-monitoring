@@ -34,6 +34,10 @@ alerts, and Alertmanager sends them through ntfy to the phone.
 - Loki is not published, because every local user could push forged lines.
   Grafana's datasource proxy (`/api/datasources/proxy/uid/loki/`) reads it.
   Loki refuses delete requests.
+- ntfy is the one public container of this pod and shares its `127.0.0.1`
+  with Loki and Alertmanager, which have no authentication. A compromised
+  ntfy can read Loki, push forged lines with any labels, and silence every
+  alert.
 - Alloy reads `/var/log/journal` as `container_logreader_t`, with the
   `systemd-journal` group. The mount has no `:z`, because a relabel breaks
   journald for the host.
