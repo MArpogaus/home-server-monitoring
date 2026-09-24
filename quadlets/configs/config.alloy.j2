@@ -52,7 +52,7 @@ loki.relabel "journal" {
     regex         = "(.+)"
     target_label  = "user_unit"
   }
-  // README.md, "Loki stream limit".
+  // README.md, "Loki limits".
   rule {
     source_labels = ["unit"]
     regex         = "(run-.+|libpod-.+|session-.+|[0-9a-f]{64}-.+)\\.(service|scope|timer)"
@@ -82,7 +82,7 @@ loki.relabel "journal" {
     replacement   = "{{ svc.name }}"
   }
 {% endfor %}{% endfor %}
-  // README.md, "Loki stream limit": only the idents a rule or a dashboard
+  // README.md, "Loki limits": only the idents a rule or a dashboard
   // selects become label values.
   rule {
     source_labels = ["__journal_syslog_identifier"]
