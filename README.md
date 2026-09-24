@@ -86,6 +86,12 @@ Loki answers a stream above the limit with 429, and Alloy backs off up to five
 minutes per attempt. When the stream count is below the limit again, restart
 `monitoring-alloy.service`.
 
+### Loki series limit per query
+
+A single query returns at most 5000 series (`max_query_series` in `loki.yaml`).
+The top-N tables group by path or client before `topk` picks ten, and scanners
+send thousands of distinct paths a day, so the default of 500 fails them.
+
 ### Alloy watch on the journal
 
 container-selinux gives `container_logreader_t` read access to the host's logs
@@ -354,6 +360,13 @@ monitoring files to `home-server`'s `quadlet_service` as
 
 The role also loads a system-wide SELinux module, `alloy_journal_watch`. That
 is the one thing it changes outside its own service user.
+
+## LLM coding tools
+
+This project is developed with LLM-based coding tools. They write most of the
+code and documentation. The maintainer sets the goals and the design, reviews
+every change and is responsible for it. Changes are tested on a VM before they
+reach a host.
 
 ## License
 
