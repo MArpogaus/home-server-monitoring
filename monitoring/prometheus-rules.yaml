@@ -112,7 +112,7 @@ groups:
     interval: 60s
     rules:
       - alert: LogShippingStopped
-        expr: (sum(rate(loki_write_sent_entries_total[30m])) or vector(0)) == 0
+        expr: (sum(rate(loki_write_sent_entries_total[15m])) or vector(0)) == 0
         for: 15m
         labels:
           severity: critical

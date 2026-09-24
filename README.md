@@ -129,7 +129,7 @@ checkout at `home-server/services/<name>`, on the controller, at every deploy.
 The rule files go out verbatim: they are not templates. Each dashboard goes out
 with the link bar that the role adds (see below). Each repository becomes one
 Prometheus rule file, one Loki rule namespace and one Grafana folder, all named
-after the repository. A file that leaves a repository leaves the host on the
+after the service (`home-server` for the host repository). A file that leaves a repository leaves the host on the
 next deploy. Only this role writes the rules, as the `monitoring` user, so no
 service can change the alerts of another.
 
@@ -141,7 +141,7 @@ sender writes into a line cannot drop it. Redaction applies to every line,
 because another producer can carry the same value: the proxy logs the path of a
 Nextcloud share link. A redaction's capture group matches only the value, never
 quotes or whitespace, so it cannot swallow the rest of a line. A line that
-matches a pattern in `alloy-drop.txt` is dropped, counted under the repository's
+matches a pattern in `alloy-drop.txt` is dropped, counted under the service's
 name in `loki_process_dropped_lines_total`. In a line that matches a pattern in
 `alloy-redact.txt`, the pattern's first capture group becomes `<redacted>`, so a
 repository keeps its own credentials out of Loki. The owning repository's README
@@ -353,8 +353,7 @@ any of them.
 
 `site.yml` passes `service_name`, `service_home` and `service_repo`. The role
 also reads `base_setup_services`, and needs the `dir` of every entry, which a
-pre-task in `home-server`'s `site.yml` adds. Each service's name is also its
-repository's name. It hands the collected
+pre-task in `home-server`'s `site.yml` adds. It hands the collected
 monitoring files to `home-server`'s `quadlet_service` as
 `quadlet_service_extra_files` (`home-server/docs/DESIGN.md`).
 
