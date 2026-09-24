@@ -74,7 +74,8 @@ role collects them from `home-server` and from each `home-server/services/<name>
   `loki_process_dropped_lines_total` counts the drops per service.
 - A redact pattern applies to every line, because another sender can log the
   same value. Alloy replaces every capture group, so a group matches only the
-  value, never quotes or whitespace.
+  value, never the quotes around it. It allows whitespace only where the value
+  can hold it.
 - A scheduled job reports success as a textfile metric: it writes
   `/var/lib/node-textfile/<name>.prom` through a temporary file and a rename.
   A rule compares its timestamp with `time()`.
