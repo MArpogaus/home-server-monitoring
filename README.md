@@ -21,7 +21,7 @@ alerts, and Alertmanager sends them through ntfy to the phone.
 |---|---|---|
 | `monitoring_service_*_image` | see `defaults/main.yml` | The images |
 | `monitoring_service_probe_urls` | `[]` | URLs that blackbox probes |
-| `monitoring_service_grafana_admin_password` | required | Grafana `admin` login |
+| `monitoring_service_grafana_admin_password` | required | Grafana `admin` login; Grafana takes it on its first start only |
 | `monitoring_service_ntfy_password` | required | ntfy login of the phone, user `ntfy`, topic `alerts` |
 | `monitoring_service_ntfy_token` | required | ntfy token of Alertmanager |
 | `monitoring_service_ntfy_base_url` | `http://127.0.0.1:8081` | The address that links in a notification use |
