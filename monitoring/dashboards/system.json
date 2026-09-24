@@ -873,7 +873,7 @@
           "sort": "none"
         }
       },
-      "description": "Every container podman reported on, from its own event log. A deploy shows as a short stopped-starting-healthy sequence on the whole pod; a single red band is one container in trouble. Each point looks back 24 h, so a container that only logged its start still shows that state for a day: with a health check the band turns green every 30 s, without one it stays blue from the start event onwards. Scrape targets above is the real health of Loki and Alloy.",
+      "description": "Every container podman reported on, from its own event log. A deploy shows as a short stopped-starting-healthy sequence on the whole pod; a single red band is one container in trouble. Each point looks back 24 h, so a container that only logged its start still shows that state for a day: with a health check the band turns green at every check, without one it stays blue from the start event onwards. Scrape targets above is the real health of Loki and Alloy.",
       "id": 14
     },
     {
