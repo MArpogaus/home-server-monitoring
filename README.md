@@ -49,7 +49,7 @@ alerts, and Alertmanager sends them through ntfy to the phone.
   system D-Bus that the systemd collector needs.
 - Loki has no health check, because its image has neither `wget` nor a shell.
 - `alertmanager.yaml` holds the ntfy token and stays `0644`, because
-  Alertmanager runs as `nobody`, outside the subuid range. The env files with
+  Alertmanager runs as `nobody`, not as the file's owner. The env files with
   credentials are `0600`.
 - Alertmanager reaches ntfy inside the pod, so alerts do not depend on the
   proxy. Every ntfy start syncs the phone's user and Alertmanager's token into
