@@ -119,7 +119,8 @@ still carries its service.
   `emitter_uid="0"` for PID 1 and root daemons, `transport` for kernel and
   audit lines, and `service` plus `transport="journal"` for a service user's
   manager. A container writes as `syslog` or `stdout`, so it cannot pass for
-  its manager.
+  its manager. A pod with the journald log driver also writes as `journal`, with
+  `container` set, so a rule on its lines pins `container`.
 - A rule on `syslog_identifier` trusts every container of that service, because
   the sender chooses the identifier.
 - The window of a count rule must be longer than its `for:`. One line keeps
