@@ -1,0 +1,142 @@
+---
+- name: Assert the ntfy and Grafana credentials are set
+  ansible.builtin.assert:
+    that:
+      - monitoring_service_ntfy_password | length > 0
+      - monitoring_service_ntfy_token is match('^tk_[a-z0-9]{29}$')
+      - monitoring_service_grafana_admin_password | length > 0
+    fail_msg: >-
+      Set monitoring_service_ntfy_password, monitoring_service_ntfy_token
+      (tk_ plus 29 lowercase letters or digits) and
+      monitoring_service_grafana_admin_password. home-server/README.md, "Variables".
+    quiet: true
+
+- name: Ensure the local SELinux policy directory exists
+  ansible.builtin.file:
+    path: /etc/selinux/local
+    state: directory
+    owner: root
+    mode: '0755'
+
+- name: Install the SELinux policy for Alloy's journal watch
+  ansible.builtin.copy:
+    src: alloy_journal_watch.cil
+    dest: /etc/selinux/local/alloy_journal_watch.cil
+    owner: root
+    mode: '0644'
+  register: monitoring_service_watch_policy
+
+- name: Read the loaded SELinux modules
+  ansible.builtin.command: semodule -l
+  register: monitoring_service_modules
+  changed_when: false
+
+- name: Load the journal watch module
+  ansible.builtin.command: semodule -i /etc/selinux/local/alloy_journal_watch.cil
+  when: monitoring_service_watch_policy is changed
+        or 'alloy_journal_watch' not in monitoring_service_modules.stdout_lines
+  changed_when: true
+  register: monitoring_service_watch_module
+
+- name: Collect the rules and dashboards of every repository
+  ansible.builtin.set_fact:
+    monitoring_service_files: >-
+      {{ monitoring_service_files | default([])
+         + [{'src': monitoring_service_src, 'dest': item.1.dest ~ item.0.repo ~ item.1.suffix}] }}
+  when: monitoring_service_src is exists
+  loop: "{{ monitoring_service_repos | product(monitoring_service_kinds) | list }}"
+  loop_control:
+    label: "{{ item.0.repo }} {{ item.1.src }}"
+  vars:
+    monitoring_service_src: "{{ item.0.dir }}/monitoring/{{ item.1.src }}"
+    monitoring_service_kinds:
+      - {src: prometheus-rules.yaml, dest: configs/rules/prometheus/, suffix: .yaml}
+      - {src: loki-rules.yaml, dest: configs/rules/loki/, suffix: .yaml}
+
+- name: Read the log drop and redaction patterns of every repository
+  ansible.builtin.set_fact:
+    monitoring_service_alloy: >-
+      {{ monitoring_service_alloy | default([])
+         + [{'kind': item.1, 'repo': item.0.repo, 'service': item.0.name,
+             'patterns': lookup('ansible.builtin.file', monitoring_service_alloy_file).splitlines()
+                         | map('trim') | reject('match', '#') | reject('eq', '') | list}] }}
+  when: monitoring_service_alloy_file is exists
+  loop: "{{ monitoring_service_repos | product(['drop', 'redact']) | list }}"
+  loop_control:
+    label: "{{ item.0.repo }} {{ item.1 }}"
+  vars:
+    monitoring_service_alloy_file: "{{ item.0.dir }}/monitoring/alloy-{{ item.1 }}.txt"
+
+- name: Find the dashboards, this repository's first
+  ansible.builtin.set_fact:
+    monitoring_service_dashboard_files: >-
+      {{ monitoring_service_dashboard_files | default([])
+         + ([item.repo] | product(query('ansible.builtin.fileglob', item.dir ~ '/monitoring/dashboards/*.json') | sort) | list) }}
+  when: (item.dir ~ '/monitoring/dashboards') is exists
+  loop: "{{ monitoring_service_repos | selectattr('repo', 'eq', 'monitoring') | list
+            + monitoring_service_repos | rejectattr('repo', 'eq', 'monitoring') | list }}"
+  loop_control:
+    label: "{{ item.repo }}"
+
+- name: Read the dashboards
+  ansible.builtin.set_fact:
+    monitoring_service_dashboards: >-
+      {{ monitoring_service_dashboards | default([])
+         + [{'dest': 'configs/dashboards/' ~ item.0 ~ '/' ~ (item.1 | basename),
+             'json': lookup('ansible.builtin.file', item.1) | from_json}] }}
+  loop: "{{ monitoring_service_dashboard_files | default([]) }}"
+  loop_control:
+    label: "{{ item.1 | basename }}"
+
+- name: Keep the syslog identifiers that a rule or a dashboard selects
+  ansible.builtin.set_fact:
+    monitoring_service_idents: >-
+      {{ (query('ansible.builtin.file', *(monitoring_service_files | map(attribute='src')))
+          + [monitoring_service_dashboards | default([]) | map(attribute='json') | to_json])
+         | join('\n') | regex_findall('syslog_identifier\s*[=!]~?\s*\\*"([^"\\]+)')
+         | map('split', '|') | flatten | unique | sort }}
+
+- name: Add the link bar to every dashboard
+  ansible.builtin.set_fact:
+    monitoring_service_files: >-
+      {{ monitoring_service_files | default([])
+         + [{'dest': item.dest, 'content': item.json | combine({'links': monitoring_service_links | from_json}) | to_nice_json}] }}
+  loop: "{{ monitoring_service_dashboards | default([]) }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  vars:
+    monitoring_service_links: >-
+      [{% for d in monitoring_service_dashboards %}{{ {'type': 'link', 'title': d.json.title, 'url': '/d/' ~ d.json.uid,
+      'icon': 'dashboard', 'keepTime': true} | to_json }}{{ ',' if not loop.last }}{% endfor %}]
+
+- name: Deploy the Quadlets
+  ansible.builtin.import_role:
+    name: quadlet_service
+  vars:
+    quadlet_service_extra_files: "{{ monitoring_service_files }}"
+    quadlet_service_restart: "{{ monitoring_service_watch_module is changed }}"
+
+- name: Wait for Grafana and Prometheus to answer
+  ansible.builtin.uri:
+    url: "{{ item }}"
+    status_code: 200
+  loop:
+    - http://127.0.0.2:3000/api/health
+    - http://127.0.0.2:9090/-/ready
+  register: monitoring_service_ready
+  until: monitoring_service_ready is success
+  retries: 120
+  delay: 10
+
+- name: Wait for Loki to answer through Grafana
+  ansible.builtin.uri:
+    url: http://127.0.0.2:3000/api/datasources/proxy/uid/loki/ready
+    user: admin
+    password: "{{ monitoring_service_grafana_admin_password }}"
+    force_basic_auth: true
+    status_code: 200
+  register: monitoring_service_loki_ready
+  until: monitoring_service_loki_ready is success
+  retries: 60
+  delay: 10
+  no_log: true

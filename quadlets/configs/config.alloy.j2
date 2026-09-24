@@ -1,0 +1,117 @@
+loki.source.journal "host" {
+  path           = "/var/log/journal"
+  max_age        = "168h"
+  relabel_rules  = loki.relabel.journal.rules
+  forward_to     = [loki.process.sanitize.receiver]
+}
+
+// README.md, "Monitoring files of a repository".
+loki.process "sanitize" {
+  forward_to = [loki.write.local.receiver]
+{% for f in monitoring_service_alloy | default([]) if f.kind == 'drop' %}
+
+  stage.match {
+    selector = {{ ('{service="' ~ f.service ~ '"}') | to_json }}
+{% for p in f.patterns %}
+
+    stage.drop {
+      expression          = {{ p | to_json }}
+      drop_counter_reason = {{ f.repo | to_json }}
+    }
+{% endfor %}
+  }
+{% endfor %}
+{% for f in monitoring_service_alloy | default([]) if f.kind == 'redact' %}{% for p in f.patterns %}
+
+  stage.replace {
+    expression = {{ p | to_json }}
+    replace    = "<redacted>"
+  }
+{% endfor %}{% endfor %}
+}
+
+loki.relabel "journal" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+  rule {
+    source_labels = ["__journal__systemd_user_unit"]
+    target_label  = "user_unit"
+  }
+  // A manager's message names its subject in UNIT / USER_UNIT.
+  rule {
+    source_labels = ["__journal_unit"]
+    regex         = "(.+)"
+    target_label  = "unit"
+  }
+  rule {
+    source_labels = ["__journal_user_unit"]
+    regex         = "(.+)"
+    target_label  = "user_unit"
+  }
+  // README.md, "Loki stream limit".
+  rule {
+    source_labels = ["unit"]
+    regex         = "(run-.+|libpod-.+|session-.+|[0-9a-f]{64}-.+)\\.(service|scope|timer)"
+    target_label  = "unit"
+    replacement   = "transient"
+  }
+  rule {
+    source_labels = ["user_unit"]
+    regex         = "(run-.+|libpod-.+|session-.+|[0-9a-f]{64}-.+)\\.(service|scope|timer)"
+    target_label  = "user_unit"
+    replacement   = "transient"
+  }
+  rule {
+    source_labels = ["__journal__transport"]
+    target_label  = "transport"
+  }
+  // README.md, "Labels": journald sets _UID, the sender cannot.
+  rule {
+    source_labels = ["__journal__uid"]
+    target_label  = "emitter_uid"
+  }
+{% for field in ['__journal__uid', '__journal__systemd_owner_uid'] %}{% for svc in base_setup_services %}
+  rule {
+    source_labels = ["{{ field }}"]
+    regex         = "{{ svc.uid }}"
+    target_label  = "service"
+    replacement   = "{{ svc.name }}"
+  }
+{% endfor %}{% endfor %}
+  // README.md, "Loki stream limit": only the idents a rule or a dashboard
+  // selects become label values.
+  rule {
+    source_labels = ["__journal_syslog_identifier"]
+    regex         = {{ ('(' ~ (monitoring_service_idents | default([]) | map('regex_escape') | join('|')) ~ ')') | to_json }}
+    target_label  = "syslog_identifier"
+  }
+  rule {
+    source_labels = ["__journal_syslog_identifier", "syslog_identifier"]
+    separator     = ";"
+    regex         = ".+;"
+    target_label  = "syslog_identifier"
+    replacement   = "other"
+  }
+  rule {
+    source_labels = ["__journal_container_name"]
+    target_label  = "container"
+  }
+  rule {
+    source_labels = ["__journal_priority"]
+    target_label  = "priority"
+  }
+  rule {
+    target_label = "job"
+    replacement  = "systemd-journal"
+  }
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://127.0.0.1:3100/loki/api/v1/push"
+  }
+}

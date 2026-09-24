@@ -1,0 +1,1 @@
+(allow container_logreader_t var_log_t (dir (watch)))

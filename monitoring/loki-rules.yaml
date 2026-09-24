@@ -1,0 +1,33 @@
+groups:
+  - name: containers
+    interval: 1m
+    rules:
+      - alert: ContainerRestartLoop
+        expr: |
+          sum by (service, user_unit) (
+            count_over_time(
+              {syslog_identifier="systemd", transport="journal", service=~".+", user_unit=~".+", user_unit!="transient"}
+                |= "Scheduled restart job" [15m]
+            )
+          ) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.service }}: {{ $labels.user_unit }} restarts in a loop"
+          description: "More than five restarts in fifteen minutes. Read `journalctl --user -u {{ $labels.user_unit }}` as {{ $labels.service }}."
+
+      - alert: UserUnitFailed
+        expr: |
+          sum by (service, user_unit) (
+            count_over_time(
+              {syslog_identifier="systemd", transport="journal", service=~".+", user_unit=~".+", user_unit!="transient"}
+                |~ "(?i)failed with result" [30m]
+            )
+          ) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.service }}: {{ $labels.user_unit }} failed"
+          description: "A container or a timer job of the service user, podman-auto-update included."

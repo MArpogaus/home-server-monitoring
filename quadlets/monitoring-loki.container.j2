@@ -1,0 +1,8 @@
+[Container]
+Image={{ monitoring_service_loki_image }}
+ContainerName=monitoring-loki
+Volume=./configs/loki.yaml:/etc/loki/local-config.yaml:ro,Z
+Volume=./configs/rules/loki/:/etc/loki/rules/fake/:ro,Z
+Volume=loki-data:/loki:Z
+Memory=512M
+Pod=monitoring.pod

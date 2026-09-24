@@ -1,0 +1,15 @@
+[Unit]
+After=monitoring-loki.service
+
+[Container]
+Image={{ monitoring_service_alloy_image }}
+ContainerName=monitoring-alloy
+User=473
+GroupAdd=keep-groups
+SecurityLabelType=container_logreader_t
+Volume=./configs/config.alloy:/etc/alloy/config.alloy:ro,Z
+Volume=/var/log/journal:/var/log/journal:ro
+Volume=/etc/machine-id:/etc/machine-id:ro
+Volume=alloy-data:/var/lib/alloy/data:U
+Memory=256M
+Pod=monitoring.pod
