@@ -149,4 +149,4 @@ groups:
           severity: critical
         annotations:
           summary: "Alertmanager cannot deliver to {{ $labels.integration }}: alerts are being dropped"
-          description: "Check the ntfy token of Alertmanager, monitoring_service_ntfy_token."
+          description: "Check monitoring_service_alert_webhook_url and monitoring_service_alert_webhook_token."

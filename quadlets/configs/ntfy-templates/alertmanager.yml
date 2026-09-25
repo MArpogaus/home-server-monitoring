@@ -1,7 +1,0 @@
-title: |-
-  {{ .commonLabels.alertname }}{{ if eq .status "resolved" }} resolved{{ end }}
-message: |-
-  {{ .commonAnnotations.summary }}{{ if .commonAnnotations.description }}
-  {{ .commonAnnotations.description }}{{ end }}
-priority: |-
-  {{ if eq .commonLabels.severity "critical" }}5{{ else if eq .commonLabels.severity "info" }}2{{ else }}3{{ end }}

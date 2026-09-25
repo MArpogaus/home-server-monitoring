@@ -1,14 +1,14 @@
 route:
-  receiver: ntfy
+  receiver: webhook
   group_by: ['...']
   group_wait: 30s
   repeat_interval: 24h
   routes:
     - matchers: [severity="critical"]
-      receiver: ntfy
+      receiver: webhook
       repeat_interval: 4h
     - matchers: [severity="info"]
-      receiver: ntfy-info
+      receiver: webhook-info
       group_wait: 10s
       repeat_interval: 1h
 
@@ -16,16 +16,18 @@ inhibit_rules:
   - source_matchers: [alertname="LogShippingStopped"]
     target_matchers: [source!="prometheus"]
 
+# A receiver without a webhook drops the notification.
 receivers:
-  - name: ntfy
+{% for name, resolved in [('webhook', true), ('webhook-info', false)] %}
+  - name: {{ name }}
+{% if monitoring_service_alert_webhook_url | length > 0 %}
     webhook_configs:
-      - url: &ntfy_url "http://127.0.0.1:8081/alerts?template=alertmanager"
-        send_resolved: true
-        http_config: &ntfy_auth
+      - url: "{{ monitoring_service_alert_webhook_url }}"
+        send_resolved: {{ resolved | lower }}
+{% if monitoring_service_alert_webhook_token | length > 0 %}
+        http_config:
           authorization:
-            credentials: "{{ monitoring_service_ntfy_token }}"
-  - name: ntfy-info
-    webhook_configs:
-      - url: *ntfy_url
-        send_resolved: false
-        http_config: *ntfy_auth
+            credentials: "{{ monitoring_service_alert_webhook_token }}"
+{% endif %}
+{% endif %}
+{% endfor %}

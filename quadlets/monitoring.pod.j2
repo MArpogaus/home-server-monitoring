@@ -1,0 +1,6 @@
+[Pod]
+PodName=monitoring
+# Alertmanager reaches a webhook on the host loopback at this address.
+Network=pasta:--map-host-loopback,{{ monitoring_service_host_loopback_address }}
+PublishPort=127.0.0.2:3000:3000/tcp
+PublishPort=127.0.0.2:9090:9090/tcp

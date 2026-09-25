@@ -1,15 +1,10 @@
 ---
-- name: Assert the ntfy and Grafana credentials are set
+- name: Assert the Grafana password is set
   ansible.builtin.assert:
-    that:
-      - monitoring_service_ntfy_password | length > 0
-      - monitoring_service_ntfy_token is match('^tk_[a-z0-9]{29}$')
-      - monitoring_service_grafana_admin_password | length > 0
+    that: monitoring_service_grafana_admin_password | length > 0
     fail_msg: >-
-      Set monitoring_service_ntfy_password, monitoring_service_ntfy_token
-      (tk_ plus 29 lowercase letters or digits) and
-      monitoring_service_grafana_admin_password. home-server-monitoring/README.md,
-      "Configuration".
+      Set monitoring_service_grafana_admin_password.
+      home-server-monitoring/README.md, "Configuration".
     quiet: true
 
 - name: Ensure the local SELinux policy directory exists
