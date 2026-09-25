@@ -23,7 +23,7 @@ alerts, and Alertmanager sends them to a webhook.
 | `monitoring_service_grafana_admin_password` | required | Grafana `admin` login; Grafana takes it on its first start only |
 | `monitoring_service_alert_webhook_url` | empty | Where Alertmanager posts; empty keeps the alerts in Grafana |
 | `monitoring_service_alert_webhook_token` | empty | Bearer token for the webhook |
-| `monitoring_service_host_loopback_address` | `169.254.1.3` | Host loopback as the pod sees it |
+| `monitoring_service_host_ports` | `[]` | Host loopback ports the pod reaches on its own `127.0.0.1`, such as the webhook's |
 
 ## Specifics
 
@@ -48,8 +48,10 @@ alerts, and Alertmanager sends them to a webhook.
 - `alertmanager.yaml` holds the webhook token and stays `0644`, because
   Alertmanager runs as `nobody`, not as the file's owner. The env files with
   credentials are `0600`.
-- The pod maps the host loopback to `169.254.1.3`, so a webhook on the host,
-  such as `home-server-ntfy`, does not depend on the proxy.
+- pasta forwards only the ports in `monitoring_service_host_ports` from the
+  pod's `127.0.0.1` to the host's. A webhook on the host, such as
+  `home-server-ntfy`, therefore does not depend on the proxy. The pod reaches
+  no other host service, and so not Nextcloud's port either.
 - Alertmanager groups by every label, so each notification carries one alert
   with all its annotations.
 - While `LogShippingStopped` fires, Alertmanager holds back every alert without
