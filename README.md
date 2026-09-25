@@ -2,18 +2,17 @@
 
 The monitoring stack in one rootless Podman pod, with an Ansible role that
 deploys it. Alloy ships the host journal to Loki, Prometheus and Loki raise
-alerts, and Alertmanager sends them through ntfy to the phone.
+alerts, and Alertmanager sends them to a webhook.
 
 | Container | Job | Memory ceiling |
 |---|---|---|
 | monitoring-prometheus | Metrics, metric alert rules | 512M |
-| monitoring-alertmanager | Alert routing to ntfy | 128M |
-| monitoring-grafana | Dashboards | 384M |
+| monitoring-alertmanager | Alert routing to the webhook | 128M |
+| monitoring-grafana | Dashboards | 512M |
 | monitoring-loki | Log store, log alert rules | 512M |
 | monitoring-alloy | Host journal to Loki | 256M |
 | monitoring-node-exporter | Host metrics, hwmon, textfile metrics | 64M |
 | monitoring-blackbox | Probes the public URLs from the host | 64M |
-| monitoring-ntfy | Push notifications | 128M |
 
 ## Configuration
 
@@ -22,22 +21,17 @@ alerts, and Alertmanager sends them through ntfy to the phone.
 | `monitoring_service_*_image` | see `defaults/main.yml` | The images |
 | `monitoring_service_probe_urls` | `[]` | URLs that blackbox probes |
 | `monitoring_service_grafana_admin_password` | required | Grafana `admin` login; Grafana takes it on its first start only |
-| `monitoring_service_ntfy_password` | required | ntfy login of the phone, user `ntfy`, topic `alerts` |
-| `monitoring_service_ntfy_token` | required | ntfy token of Alertmanager |
-| `monitoring_service_ntfy_base_url` | `http://127.0.0.1:8081` | The address that links in a notification use |
+| `monitoring_service_alert_webhook_url` | empty | Where Alertmanager posts; empty keeps the alerts in Grafana |
+| `monitoring_service_alert_webhook_token` | empty | Bearer token for the webhook |
+| `monitoring_service_host_ports` | `[]` | Host loopback ports the pod reaches on its own `127.0.0.1`, such as the webhook's |
 
 ## Specifics
 
-- The proxy pod maps only the host's `127.0.0.1`, so it reaches ntfy and
-  nothing else of this stack. Grafana is reached through
-  `ssh -L 3000:127.0.0.2:3000`.
+- Nothing of this stack is on the host's `127.0.0.1`, so the proxy pod does
+  not reach it. Grafana is reached through `ssh -L 3000:127.0.0.2:3000`.
 - Loki is not published, because every local user could push forged lines.
   Grafana's datasource proxy (`/api/datasources/proxy/uid/loki/`) reads it.
   Loki refuses delete requests.
-- ntfy is the one public container of this pod and shares its `127.0.0.1`
-  with Loki and Alertmanager, which have no authentication. A compromised
-  ntfy can read Loki, push forged lines with any labels, and silence every
-  alert.
 - Alloy reads `/var/log/journal` as `container_logreader_t`, with the
   `systemd-journal` group. The mount has no `:z`, because a relabel breaks
   journald for the host.
@@ -51,14 +45,15 @@ alerts, and Alertmanager sends them through ntfy to the phone.
 - Unit state comes from the journal, because SELinux denies `container_t` the
   system D-Bus that the systemd collector needs.
 - Loki has no health check, because its image has neither `wget` nor a shell.
-- `alertmanager.yaml` holds the ntfy token and stays `0644`, because
+- `alertmanager.yaml` holds the webhook token and stays `0644`, because
   Alertmanager runs as `nobody`, not as the file's owner. The env files with
   credentials are `0600`.
-- Alertmanager reaches ntfy inside the pod, so alerts do not depend on the
-  proxy. Every ntfy start syncs the phone's user and Alertmanager's token into
-  `user.db`.
-- Alertmanager groups by every label, so each alert keeps all its annotations.
-  The title is the alert name, the message the summary and the description.
+- pasta forwards only the ports in `monitoring_service_host_ports` from the
+  pod's `127.0.0.1` to the host's. A webhook on the host, such as
+  `home-server-ntfy`, therefore does not depend on the proxy. The pod reaches
+  no other host loopback port, and so not Nextcloud's `127.0.0.1:8080`.
+- Alertmanager groups by every label, so each notification carries one alert
+  with all its annotations.
 - While `LogShippingStopped` fires, Alertmanager holds back every alert without
   the label `source: prometheus`.
 - A notifier on this machine cannot report that the machine is down.
@@ -146,11 +141,11 @@ still carries its service.
 
 ## Alerts
 
-| Severity | Meaning | ntfy priority | Repeats | Resolved message |
-|---|---|---|---|---|
-| `critical` | Data at risk, or a service is down | 5 | every 4 h | yes |
-| `warning` | Needs attention within a day | 3 | every 24 h | yes |
-| `info` | An event | 2 | every 1 h while it fires | no |
+| Severity | Meaning | Repeats | Resolved message |
+|---|---|---|---|
+| `critical` | Data at risk, or a service is down | every 4 h | yes |
+| `warning` | Needs attention within a day | every 24 h | yes |
+| `info` | An event | every 1 h while it fires | no |
 
 | Alert | Severity | Fires when |
 |---|---|---|

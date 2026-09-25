@@ -1,0 +1,8 @@
+[Pod]
+PodName=monitoring
+{% if monitoring_service_host_ports | length > 0 %}
+# The pod reaches these host loopback ports on its own 127.0.0.1, and no other.
+Network=pasta:-T,{{ monitoring_service_host_ports | join(',-T,') }}
+{% endif %}
+PublishPort=127.0.0.2:3000:3000/tcp
+PublishPort=127.0.0.2:9090:9090/tcp

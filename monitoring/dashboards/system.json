@@ -1272,7 +1272,7 @@
         },
         {
           "expr": "sum(increase(alertmanager_notifications_failed_total{integration=\"webhook\"}[$__rate_interval])) > 0",
-          "legendFormat": "delivery to ntfy",
+          "legendFormat": "delivery to the webhook",
           "range": true,
           "refId": "B",
           "datasource": {
