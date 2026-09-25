@@ -43,11 +43,11 @@
   ansible.builtin.set_fact:
     monitoring_service_files: >-
       {{ monitoring_service_files | default([])
-         + [{'src': monitoring_service_src, 'dest': item.1.dest ~ item.0.repo ~ item.1.suffix}] }}
+         + [{'src': monitoring_service_src, 'dest': item.1.dest ~ item.0.name ~ item.1.suffix}] }}
   when: monitoring_service_src is exists
   loop: "{{ monitoring_service_repos | product(monitoring_service_kinds) | list }}"
   loop_control:
-    label: "{{ item.0.repo }} {{ item.1.src }}"
+    label: "{{ item.0.name }} {{ item.1.src }}"
   vars:
     monitoring_service_src: "{{ item.0.dir }}/monitoring/{{ item.1.src }}"
     monitoring_service_kinds:
@@ -58,13 +58,14 @@
   ansible.builtin.set_fact:
     monitoring_service_alloy: >-
       {{ monitoring_service_alloy | default([])
-         + [{'kind': item.1, 'repo': item.0.repo, 'service': item.0.name,
+         + [{'kind': item.1, 'repo': item.0.name,
+             'service': '' if item.0.name == 'home-server' else item.0.name,
              'patterns': lookup('ansible.builtin.file', monitoring_service_alloy_file).splitlines()
                          | map('trim') | reject('match', '#') | reject('eq', '') | list}] }}
   when: monitoring_service_alloy_file is exists
   loop: "{{ monitoring_service_repos | product(['drop', 'redact']) | list }}"
   loop_control:
-    label: "{{ item.0.repo }} {{ item.1 }}"
+    label: "{{ item.0.name }} {{ item.1 }}"
   vars:
     monitoring_service_alloy_file: "{{ item.0.dir }}/monitoring/alloy-{{ item.1 }}.txt"
 
@@ -72,12 +73,12 @@
   ansible.builtin.set_fact:
     monitoring_service_dashboard_files: >-
       {{ monitoring_service_dashboard_files | default([])
-         + ([item.repo] | product(query('ansible.builtin.fileglob', item.dir ~ '/monitoring/dashboards/*.json') | sort) | list) }}
+         + ([item.name] | product(query('ansible.builtin.fileglob', item.dir ~ '/monitoring/dashboards/*.json') | sort) | list) }}
   when: (item.dir ~ '/monitoring/dashboards') is exists
-  loop: "{{ monitoring_service_repos | selectattr('repo', 'eq', 'monitoring') | list
-            + monitoring_service_repos | rejectattr('repo', 'eq', 'monitoring') | list }}"
+  loop: "{{ monitoring_service_repos | selectattr('name', 'eq', 'monitoring') | list
+            + monitoring_service_repos | rejectattr('name', 'eq', 'monitoring') | list }}"
   loop_control:
-    label: "{{ item.repo }}"
+    label: "{{ item.name }}"
 
 - name: Read the dashboards
   ansible.builtin.set_fact:
