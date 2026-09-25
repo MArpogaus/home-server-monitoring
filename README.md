@@ -8,7 +8,7 @@ alerts, and Alertmanager sends them through ntfy to the phone.
 |---|---|---|
 | monitoring-prometheus | Metrics, metric alert rules | 512M |
 | monitoring-alertmanager | Alert routing to ntfy | 128M |
-| monitoring-grafana | Dashboards | 384M |
+| monitoring-grafana | Dashboards | 512M |
 | monitoring-loki | Log store, log alert rules | 512M |
 | monitoring-alloy | Host journal to Loki | 256M |
 | monitoring-node-exporter | Host metrics, hwmon, textfile metrics | 64M |
