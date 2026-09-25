@@ -51,7 +51,7 @@ alerts, and Alertmanager sends them to a webhook.
 - pasta forwards only the ports in `monitoring_service_host_ports` from the
   pod's `127.0.0.1` to the host's. A webhook on the host, such as
   `home-server-ntfy`, therefore does not depend on the proxy. The pod reaches
-  no other host service, and so not Nextcloud's port either.
+  no other host loopback port, and so not Nextcloud's `127.0.0.1:8080`.
 - Alertmanager groups by every label, so each notification carries one alert
   with all its annotations.
 - While `LogShippingStopped` fires, Alertmanager holds back every alert without
