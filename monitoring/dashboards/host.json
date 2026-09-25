@@ -1337,7 +1337,7 @@
       "gridPos": {
         "x": 0,
         "y": 35,
-        "w": 12,
+        "w": 24,
         "h": 8
       },
       "targets": [
@@ -1393,80 +1393,6 @@
       },
       "description": "Share of time the disk had a request in flight; near 100 % means it is saturated.",
       "id": 18
-    },
-    {
-      "title": "Network",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "x": 12,
-        "y": 35,
-        "w": 12,
-        "h": 8
-      },
-      "targets": [
-        {
-          "expr": "sum by (device) (rate(node_network_receive_bytes_total{device!~\"lo|veth.*|podman.*|pasta.*|tap.*\"}[$__rate_interval]) * 8)",
-          "legendFormat": "{{device}} in",
-          "range": true,
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          }
-        },
-        {
-          "expr": "-sum by (device) (rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|podman.*|pasta.*|tap.*\"}[$__rate_interval]) * 8)",
-          "legendFormat": "{{device}} out (drawn below zero)",
-          "range": true,
-          "refId": "B",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "bps",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "custom": {
-            "lineWidth": 1,
-            "fillOpacity": 12,
-            "showPoints": "auto",
-            "spanNulls": false
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "calcs": [
-            "mean",
-            "max",
-            "lastNotNull"
-          ]
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "description": "Traffic of the physical interfaces, without the virtual interfaces of the pods.",
-      "id": 19
     },
     {
       "title": "Temperatures",
