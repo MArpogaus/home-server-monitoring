@@ -4,7 +4,7 @@ The monitoring stack in one rootless Podman pod, with an Ansible role that
 deploys it. Alloy ships the host journal to Loki, Prometheus and Loki raise
 alerts, and Alertmanager sends them to a webhook.
 
-| Container | Job | Memory ceiling |
+| Container | Job | Default memory ceiling |
 |---|---|---|
 | monitoring-prometheus | Metrics, metric alert rules | 512M |
 | monitoring-alertmanager | Alert routing to the webhook | 128M |
@@ -16,14 +16,20 @@ alerts, and Alertmanager sends them to a webhook.
 
 ## Configuration
 
+The service follows the configuration interface in
+`home-server-template/README.md`, "Configuration interface". It has no public
+hostname and no port for the proxy.
+
 | Variable | Default | Controls |
 |---|---|---|
-| `monitoring_service_*_image` | see `defaults/main.yml` | The images |
-| `monitoring_service_probe_urls` | `[]` | URLs that blackbox probes |
 | `monitoring_service_grafana_admin_password` | required | Grafana `admin` login; Grafana takes it on its first start only |
+| `monitoring_service_config` | `{}` | Grafana's environment (`GF_*`), merged over `monitoring_service_config_defaults`; the role keeps `GF_SECURITY_ADMIN_PASSWORD__FILE` |
+| `monitoring_service_memory` | `{}` | Memory ceilings per container |
+| `monitoring_service_probe_urls` | `[]` | URLs that blackbox probes |
 | `monitoring_service_alert_webhook_url` | empty | Where Alertmanager posts; empty keeps the alerts in Grafana |
 | `monitoring_service_alert_webhook_token` | empty | Bearer token for the webhook |
 | `monitoring_service_host_ports` | `[]` | Host loopback ports the pod reaches on its own `127.0.0.1`, such as the webhook's |
+| `monitoring_service_*_image` | see `defaults/main.yml` | The images |
 
 ## Specifics
 
@@ -45,13 +51,10 @@ alerts, and Alertmanager sends them to a webhook.
 - Unit state comes from the journal, because SELinux denies `container_t` the
   system D-Bus that the systemd collector needs.
 - Loki has no health check, because its image has neither `wget` nor a shell.
-- `alertmanager.yaml` holds the webhook token and stays `0644`, because
-  Alertmanager runs as `nobody`, not as the file's owner. The env files with
-  credentials are `0600`.
 - pasta forwards only the ports in `monitoring_service_host_ports` from the
   pod's `127.0.0.1` to the host's. A webhook on the host, such as
   `home-server-ntfy`, therefore does not depend on the proxy. The pod reaches
-  no other host loopback port, and so not Nextcloud's `127.0.0.1:8080`.
+  no other host loopback port, such as Nextcloud's.
 - Alertmanager groups by every label, so each notification carries one alert
   with all its annotations.
 - While `LogShippingStopped` fires, Alertmanager holds back every alert without

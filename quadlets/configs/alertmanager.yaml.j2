@@ -27,7 +27,7 @@ receivers:
 {% if monitoring_service_alert_webhook_token | length > 0 %}
         http_config:
           authorization:
-            credentials: "{{ monitoring_service_alert_webhook_token }}"
+            credentials_file: /run/secrets/monitoring_service_alert_webhook_token
 {% endif %}
 {% endif %}
 {% endfor %}
