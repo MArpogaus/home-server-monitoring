@@ -1,4 +1,20 @@
 ---
-quadlet_service_config_modes:
-  grafana.env: '0600'
+monitoring_service_config_defaults:
+  GF_DATAPROXY_MAX_CONNS_PER_HOST: 2
+
+monitoring_service_memory_defaults:
+  prometheus: 512M
+  alertmanager: 128M
+  grafana: 512M
+  loki: 512M
+  alloy: 256M
+  node-exporter: 64M
+  blackbox: 64M
+
+quadlet_service_required:
+  monitoring_service_grafana_admin_password:
+quadlet_service_secrets:
+  monitoring_service_grafana_admin_password: "{{ monitoring_service_grafana_admin_password }}"
+  monitoring_service_alert_webhook_token: "{{ monitoring_service_alert_webhook_token }}"
+quadlet_service_memory: "{{ monitoring_service_memory_defaults | combine(monitoring_service_memory) }}"
 monitoring_service_repos: "{{ [{'name': 'home-server', 'dir': playbook_dir}] + base_setup_services }}"

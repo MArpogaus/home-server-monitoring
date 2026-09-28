@@ -1,12 +1,4 @@
 ---
-- name: Assert the Grafana password is set
-  ansible.builtin.assert:
-    that: monitoring_service_grafana_admin_password | length > 0
-    fail_msg: >-
-      Set monitoring_service_grafana_admin_password.
-      home-server-monitoring/README.md, "Configuration".
-    quiet: true
-
 - name: Ensure the local SELinux policy directory exists
   ansible.builtin.file:
     path: /etc/selinux/local
