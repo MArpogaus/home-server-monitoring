@@ -1,15 +1,8 @@
 ---
-- name: Ensure the local SELinux policy directory exists
-  ansible.builtin.file:
-    path: /etc/selinux/local
-    state: directory
-    owner: root
-    mode: '0755'
-
 - name: Install the SELinux policy for Alloy's journal watch
   ansible.builtin.copy:
     src: alloy_journal_watch.cil
-    dest: /etc/selinux/local/alloy_journal_watch.cil
+    dest: /etc/selinux/local/
     owner: root
     mode: '0644'
   register: monitoring_service_watch_policy
