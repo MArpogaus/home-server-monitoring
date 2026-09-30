@@ -1019,7 +1019,7 @@
       },
       "targets": [
         {
-          "expr": "last_over_time({syslog_identifier=\"systemd\", unit=~\"btrfs-backup@.+\\\\.service|btrfs-snapshot@.+\\\\.service|auto-reboot-staged.service\"} |~ \"Starting |Deactivated successfully|Failed with result|Dependency failed for|Finished \" | regexp `(?P<ev>Starting|Deactivated successfully|Failed with result|Dependency failed for|Finished)` | label_format v=`{{ if eq .ev \"Starting\" }}1{{ else if or (eq .ev \"Failed with result\") (eq .ev \"Dependency failed for\") }}2{{ else }}0{{ end }}` | unwrap v [$__auto]) by (unit)",
+          "expr": "last_over_time({syslog_identifier=\"systemd\", unit=~\"btrfs-backup@.+\\\\.service|btrfs-snapshot@.+\\\\.service|btrfs-scrub@.+\\\\.service|restic-backup\\\\.service|auto-reboot-staged.service\"} |~ \"Starting |Deactivated successfully|Failed with result|Dependency failed for|Finished \" | regexp `(?P<ev>Starting|Deactivated successfully|Failed with result|Dependency failed for|Finished)` | label_format v=`{{ if eq .ev \"Starting\" }}1{{ else if or (eq .ev \"Failed with result\") (eq .ev \"Dependency failed for\") }}2{{ else }}0{{ end }}` | unwrap v [$__auto]) by (unit)",
           "legendFormat": "{{unit}}",
           "queryType": "range",
           "refId": "A",
@@ -1448,7 +1448,7 @@
       },
       "targets": [
         {
-          "expr": "{unit=~\"btrfs-backup@.*|btrfs-snapshot@.*|auto-reboot-staged.service\"} |~ \"Deactivated successfully|Failed with result|Dependency failed for|run complete|Starting|error|Error\"",
+          "expr": "{unit=~\"btrfs-backup@.*|btrfs-snapshot@.*|btrfs-scrub@.*|restic-backup.service|auto-reboot-staged.service\"} |~ \"Deactivated successfully|Failed with result|Dependency failed for|run complete|Starting|error|Error\"",
           "legendFormat": "",
           "queryType": "range",
           "refId": "A",
@@ -1480,7 +1480,7 @@
         "enableLogDetails": true,
         "prettifyLogMessage": false
       },
-      "description": "Start, end and errors of the backups, the snapshots and the nightly reboot.",
+      "description": "Start, end and errors of the snapshots, backups, scrubs and the nightly reboot.",
       "id": 27
     },
     {

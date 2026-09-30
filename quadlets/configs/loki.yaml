@@ -2,7 +2,6 @@ auth_enabled: false
 
 server:
   http_listen_port: 3100
-  grpc_listen_port: 9096
   log_level: warn
 
 common:
@@ -11,7 +10,6 @@ common:
   storage:
     filesystem:
       chunks_directory: /loki/chunks
-      rules_directory: /loki/rules
   replication_factor: 1
   ring:
     kvstore:
@@ -24,7 +22,6 @@ limits_config:
   deletion_mode: disabled
 
 compactor:
-  working_directory: /loki/compactor
   retention_enabled: true
   delete_request_store: filesystem
 
@@ -36,9 +33,6 @@ ruler:
   rule_path: /tmp/loki-rules
   alertmanager_url: http://127.0.0.1:9093
   enable_api: true
-  ring:
-    kvstore:
-      store: inmemory
 
 schema_config:
   configs:

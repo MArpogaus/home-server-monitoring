@@ -1,11 +1,9 @@
 route:
   receiver: webhook
   group_by: ['...']
-  group_wait: 30s
   repeat_interval: 24h
   routes:
     - matchers: [severity="critical"]
-      receiver: webhook
       repeat_interval: 4h
     - matchers: [severity="info"]
       receiver: webhook-info
