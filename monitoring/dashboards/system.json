@@ -1480,7 +1480,7 @@
         "enableLogDetails": true,
         "prettifyLogMessage": false
       },
-      "description": "Start, end and errors of the backups, the snapshots and the nightly reboot.",
+      "description": "Start, end and errors of the snapshots, backups, scrubs and the nightly reboot.",
       "id": 27
     },
     {
