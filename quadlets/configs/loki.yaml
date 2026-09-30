@@ -24,7 +24,6 @@ limits_config:
   deletion_mode: disabled
 
 compactor:
-  working_directory: /loki/compactor
   retention_enabled: true
   delete_request_store: filesystem
 
@@ -36,9 +35,6 @@ ruler:
   rule_path: /tmp/loki-rules
   alertmanager_url: http://127.0.0.1:9093
   enable_api: true
-  ring:
-    kvstore:
-      store: inmemory
 
 schema_config:
   configs:
