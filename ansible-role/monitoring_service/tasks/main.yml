@@ -105,7 +105,9 @@
     quadlet_service_extra_files: "{{ monitoring_service_files }}"
     quadlet_service_restart: "{{ monitoring_service_watch_module is changed }}"
 
+# As core: a retry through run0 opens a logind session each time.
 - name: Wait for Grafana and Prometheus to answer
+  become: false
   ansible.builtin.uri:
     url: "{{ item }}"
     status_code: 200
@@ -118,6 +120,7 @@
   delay: 10
 
 - name: Wait for Loki to answer through Grafana
+  become: false
   ansible.builtin.uri:
     url: http://127.0.0.2:3000/api/datasources/proxy/uid/loki/ready
     user: admin
