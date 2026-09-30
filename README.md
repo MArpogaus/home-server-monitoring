@@ -34,7 +34,7 @@ hostname and no port for the proxy.
 ## Specifics
 
 - Nothing of this stack is on the host's `127.0.0.1`, so the proxy pod does
-  not reach it. Grafana is reached through `ssh -L 3000:127.0.0.2:3000`.
+  not reach it. An SSH tunnel reaches Grafana: `ssh -L 3000:127.0.0.2:3000`.
 - Loki is not published, because every local user could push forged lines.
   Grafana's datasource proxy (`/api/datasources/proxy/uid/loki/`) reads it.
   Loki refuses delete requests.
@@ -110,17 +110,17 @@ no other label.
 | `emitter_uid` | `_UID` | no |
 | `service` | the `base_setup_services` name whose uid is `_SYSTEMD_OWNER_UID`, else `_UID` | no |
 
-`service` covers every line of a service user's processes: its user manager,
-its container output and its containers' `/dev/log`. journald takes
-`_SYSTEMD_OWNER_UID` from the cgroup, so a container process under a subuid
+`service` covers every line of a service user's processes. These are its user
+manager, its container output and its containers' `/dev/log`. journald takes
+`_SYSTEMD_OWNER_UID` from the cgroup. A container process under a subuid thus
 still carries its service.
 
 ## Writing a log rule
 
-- A rule that must not be forgeable pins labels that journald sets:
-  `emitter_uid="0"` for PID 1 and root daemons, `transport` for kernel and
-  audit lines, and `service` plus `transport="journal"` for a service user's
-  manager. A container writes as `syslog` or `stdout`, so it cannot pass for
+- A rule that must not be forgeable pins labels that journald sets. It pins
+  `emitter_uid="0"` for PID 1 and root daemons and `transport` for kernel and
+  audit lines. For a service user's manager, it pins `service` plus
+  `transport="journal"`. A container writes as `syslog` or `stdout`, so it cannot pass for
   its manager. A pod with the journald log driver also writes as `journal`, with
   `container` set, so a rule on its lines pins `container`.
 - A rule on `syslog_identifier` trusts every container of that service, because
