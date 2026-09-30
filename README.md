@@ -31,9 +31,10 @@ hostname and no port for the proxy.
 | `monitoring_service_host_ports` | `[]` | Host loopback ports the pod reaches on its own `127.0.0.1`, such as the webhook's |
 | `monitoring_service_*_image` | see `defaults/main.yml` | The images |
 
-To change `monitoring_service_grafana_admin_password`, give Grafana the new
-password first, then set the variable and deploy. `read -s` keeps the password
-off the screen and out of the shell history:
+Grafana keeps the admin password of its first start. To change
+`monitoring_service_grafana_admin_password`, give Grafana the new password
+first, then set the variable and deploy. `read -s` keeps the password off the
+screen and out of the shell history:
 
 ```bash
 read -rs P && printf '%s\n' "$P" | run0 --user=monitoring podman exec -i \
