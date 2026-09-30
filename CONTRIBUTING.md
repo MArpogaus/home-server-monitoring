@@ -1,7 +1,8 @@
 # Contributing
 
 The branch flow, the hooks, the releases and the house style are in
-`home-server/CONTRIBUTING.md`.
+`home-server/CONTRIBUTING.md`. The rules a service follows are in
+`home-server-template/CONTRIBUTING.md`.
 
 ## Checking a dashboard before you commit
 
@@ -28,5 +29,5 @@ delete it by hand.
 - Ansible variables are `<role>_*`.
 - Renovate updates the container image tags in the role defaults, through the
   preset that `.github/renovate.json` extends.
-- `home-server` checks this repository out at `services/monitoring`.
-  `home-server/CONTRIBUTING.md` says how a change here reaches a deploy.
+- `home-server` checks this repository out at `services/monitoring`. Work on it
+  there. `home-server/CONTRIBUTING.md` says how a change here reaches the pin.
