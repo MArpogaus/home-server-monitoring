@@ -180,10 +180,9 @@ The contract is in `home-server-template/README.md`. The role also needs the
 
 ## LLM coding tools
 
-This project is developed with LLM-based coding tools. They write most of the
-code and documentation. The maintainer sets the goals and the design, reviews
-every change and is responsible for it. Changes are tested on a VM before they
-reach a host.
+LLM-based coding tools write most of the code and documentation of this
+project. The maintainer sets the goals and the design, reviews every change and
+is responsible for it. Each change runs on a VM before it reaches a host.
 
 ## License
 
