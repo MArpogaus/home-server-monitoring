@@ -30,7 +30,7 @@
   ansible.builtin.set_fact:
     monitoring_service_files: >-
       {{ monitoring_service_files | default([])
-         + [{'src': monitoring_service_src, 'dest': item.1.dest ~ item.0.name ~ item.1.suffix}] }}
+         + [{'content': lookup('ansible.builtin.file', monitoring_service_src), 'dest': item.1.dest ~ item.0.name ~ item.1.suffix}] }}
   when: monitoring_service_src is exists
   loop: "{{ monitoring_service_repos | product(monitoring_service_kinds) | list }}"
   loop_control:
@@ -80,7 +80,7 @@
 - name: Keep the syslog identifiers that a rule or a dashboard selects
   ansible.builtin.set_fact:
     monitoring_service_idents: >-
-      {{ (query('ansible.builtin.file', *(monitoring_service_files | map(attribute='src')))
+      {{ (monitoring_service_files | map(attribute='content') | list
           + [monitoring_service_dashboards | default([]) | map(attribute='json') | to_json])
          | join('\n') | regex_findall('syslog_identifier\s*[=!]~?\s*\\*"([^"\\]+)')
          | map('split', '|') | flatten | unique | sort }}
