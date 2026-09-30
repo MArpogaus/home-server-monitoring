@@ -31,6 +31,14 @@ hostname and no port for the proxy.
 | `monitoring_service_host_ports` | `[]` | Host loopback ports the pod reaches on its own `127.0.0.1`, such as the webhook's |
 | `monitoring_service_*_image` | see `defaults/main.yml` | The images |
 
+Grafana keeps the admin password of its first start. To change it, give
+Grafana the new one first, as the `monitoring` user, then set the variable and
+deploy:
+
+```bash
+podman exec -i monitoring-grafana grafana cli admin reset-admin-password --password-from-stdin
+```
+
 ## Specifics
 
 - Nothing of this stack is on the host's `127.0.0.1`, so the proxy pod does
