@@ -31,10 +31,20 @@ hostname and no port for the proxy.
 | `monitoring_service_host_ports` | `[]` | Host loopback ports the pod reaches on its own `127.0.0.1`, such as the webhook's |
 | `monitoring_service_*_image` | see `defaults/main.yml` | The images |
 
+Grafana keeps the admin password of its first start. To change
+`monitoring_service_grafana_admin_password`, give Grafana the new password
+first, then set the variable and deploy. `read -s` keeps the password off the
+screen and out of the shell history:
+
+```bash
+read -rs P && printf '%s\n' "$P" | run0 --user=monitoring podman exec -i \
+  monitoring-grafana grafana cli admin reset-admin-password --password-from-stdin
+```
+
 ## Specifics
 
 - Nothing of this stack is on the host's `127.0.0.1`, so the proxy pod does
-  not reach it. Grafana is reached through `ssh -L 3000:127.0.0.2:3000`.
+  not reach it. An SSH tunnel reaches Grafana: `ssh -L 3000:127.0.0.2:3000`.
 - Loki is not published, because every local user could push forged lines.
   Grafana's datasource proxy (`/api/datasources/proxy/uid/loki/`) reads it.
   Loki refuses delete requests.
@@ -110,17 +120,17 @@ no other label.
 | `emitter_uid` | `_UID` | no |
 | `service` | the `base_setup_services` name whose uid is `_SYSTEMD_OWNER_UID`, else `_UID` | no |
 
-`service` covers every line of a service user's processes: its user manager,
-its container output and its containers' `/dev/log`. journald takes
-`_SYSTEMD_OWNER_UID` from the cgroup, so a container process under a subuid
+`service` covers every line of a service user's processes. These are its user
+manager, its container output and its containers' `/dev/log`. journald takes
+`_SYSTEMD_OWNER_UID` from the cgroup. A container process under a subuid thus
 still carries its service.
 
 ## Writing a log rule
 
-- A rule that must not be forgeable pins labels that journald sets:
-  `emitter_uid="0"` for PID 1 and root daemons, `transport` for kernel and
-  audit lines, and `service` plus `transport="journal"` for a service user's
-  manager. A container writes as `syslog` or `stdout`, so it cannot pass for
+- A rule that must not be forgeable pins labels that journald sets. It pins
+  `emitter_uid="0"` for PID 1 and root daemons and `transport` for kernel and
+  audit lines. For a service user's manager, it pins `service` plus
+  `transport="journal"`. A container writes as `syslog` or `stdout`, so it cannot pass for
   its manager. A pod with the journald log driver also writes as `journal`, with
   `container` set, so a rule on its lines pins `container`.
 - A rule on `syslog_identifier` trusts every container of that service, because
@@ -180,10 +190,9 @@ The contract is in `home-server-template/README.md`. The role also needs the
 
 ## LLM coding tools
 
-This project is developed with LLM-based coding tools. They write most of the
-code and documentation. The maintainer sets the goals and the design, reviews
-every change and is responsible for it. Changes are tested on a VM before they
-reach a host.
+LLM-based coding tools write most of the code and documentation of this
+project. The maintainer sets the goals and the design, reviews every change and
+is responsible for it. Each change runs on a VM before it reaches a host.
 
 ## License
 

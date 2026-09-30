@@ -3,7 +3,7 @@ Image={{ monitoring_service_node_exporter_image }}
 ContainerName=monitoring-node-exporter
 Volume=/sys:/host/sys:ro
 Volume=/:/rootfs:ro,rslave
-Volume=/var/lib/node-textfile:/textfile:ro
+Volume={{ base_setup_textfile_dir }}:/textfile:ro
 Exec=--path.sysfs=/host/sys --path.rootfs=/rootfs --collector.hwmon --collector.textfile.directory=/textfile
 HealthCmd=wget -qO /dev/null http://127.0.0.1:9100/metrics
 HealthInterval=60s
