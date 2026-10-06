@@ -11,6 +11,12 @@ monitoring_service_memory_defaults:
   node-exporter: 64M
   blackbox: 64M
 
+monitoring_service_alert_repeat_defaults:
+  default: 24h
+  critical: 4h
+  info: 1h
+monitoring_service_alert_repeat_merged: "{{ monitoring_service_alert_repeat_defaults | combine(monitoring_service_alert_repeat) }}"
+
 quadlet_service_required:
   monitoring_service_grafana_admin_password:
 quadlet_service_secrets:

@@ -18,7 +18,7 @@ common:
 limits_config:
   allow_structured_metadata: false
   max_query_series: 5000
-  retention_period: 30d
+  retention_period: {{ monitoring_service_logs_retention }}
   deletion_mode: disabled
 
 compactor:

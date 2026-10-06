@@ -21,3 +21,7 @@ monitoring_service_alert_webhook_token: ""
 monitoring_service_config: {}
 # Memory ceilings per container, merged over monitoring_service_memory_defaults.
 monitoring_service_memory: {}
+
+monitoring_service_metrics_retention: 90d
+monitoring_service_logs_retention: 30d
+monitoring_service_alert_repeat: {}
