@@ -26,7 +26,8 @@ hostname and no port for the proxy.
 | `monitoring_service_config` | `{}` | Grafana's environment (`GF_*`), merged over `monitoring_service_config_defaults`; the role keeps `GF_SECURITY_ADMIN_PASSWORD__FILE` |
 | `monitoring_service_memory` | `{}` | Memory ceilings per container |
 | `monitoring_service_cpu` | `{}` | CPU quotas per container, such as `{loki: 50%}` |
-| `monitoring_service_metrics_retention` | `90d` | How long Prometheus keeps metrics; it also stops at 2 GB |
+| `monitoring_service_metrics_retention` | `90d` | How long Prometheus keeps metrics |
+| `monitoring_service_metrics_retention_size` | `2GB` | How much disk Prometheus uses at most; it drops the oldest data first |
 | `monitoring_service_logs_retention` | `30d` | How long Loki keeps logs |
 | `monitoring_service_alert_repeat` | `{}` | How often an open alert repeats, merged over `critical: 4h`, `info: 1h` and `default: 24h`, which covers `warning` |
 | `monitoring_service_probe_urls` | `[]` | URLs that blackbox probes |
