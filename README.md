@@ -28,7 +28,7 @@ hostname and no port for the proxy.
 | `monitoring_service_cpu` | `{}` | CPU quotas per container, such as `{loki: 50%}` |
 | `monitoring_service_metrics_retention` | `90d` | How long Prometheus keeps metrics; it also stops at 2 GB |
 | `monitoring_service_logs_retention` | `30d` | How long Loki keeps logs |
-| `monitoring_service_alert_repeat` | `{}` | How often an open alert repeats, merged over `default: 24h`, `critical: 4h`, `info: 1h` |
+| `monitoring_service_alert_repeat` | `{}` | How often an open alert repeats, merged over `critical: 4h`, `info: 1h` and `default: 24h`, which covers `warning` |
 | `monitoring_service_probe_urls` | `[]` | URLs that blackbox probes |
 | `monitoring_service_alert_webhook_url` | empty | Where Alertmanager posts; empty keeps the alerts in Grafana |
 | `monitoring_service_alert_webhook_token` | empty | Bearer token for the webhook |
@@ -158,11 +158,11 @@ still carries its service.
 
 ## Alerts
 
-| Severity | Meaning | Repeats | Resolved message |
+| Severity | Meaning | Repeats (`monitoring_service_alert_repeat`) | Resolved message |
 |---|---|---|---|
-| `critical` | Data at risk, or a service is down | every 4 h | yes |
-| `warning` | Needs attention within a day | every 24 h | yes |
-| `info` | An event | every 1 h while it fires | no |
+| `critical` | Data at risk, or a service is down | `critical`, 4 h | yes |
+| `warning` | Needs attention within a day | `default`, 24 h | yes |
+| `info` | An event | `info`, 1 h while it fires | no |
 
 | Alert | Severity | Fires when |
 |---|---|---|
