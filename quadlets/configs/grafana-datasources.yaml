@@ -1,6 +1,5 @@
 apiVersion: 1
 
-# Fixed uids: the dashboards reference them.
 datasources:
   - name: Prometheus
     uid: prometheus

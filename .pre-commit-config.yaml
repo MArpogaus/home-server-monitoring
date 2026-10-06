@@ -7,14 +7,12 @@ repos:
       - id: check-executables-have-shebangs
       - id: check-merge-conflict
       - id: check-shebang-scripts-are-executable
-        # A .j2 shebang belongs to the rendered file, not to the template.
         exclude: \.j2$
       - id: check-yaml
       - id: end-of-file-fixer
       - id: mixed-line-ending
       - id: trailing-whitespace
 
-  # ansible-lint owns YAML style, so no YAML formatter runs beside it.
   - repo: https://github.com/ansible/ansible-lint
     rev: e7f397ad6dfa20d274afa17cd7bbedd84ed136f5  # frozen: v26.9.0
     hooks:

@@ -1,20 +1,19 @@
 route:
   receiver: webhook
   group_by: ['...']
-  repeat_interval: 24h
+  repeat_interval: {{ monitoring_service_alert_repeat_merged.default }}
   routes:
     - matchers: [severity="critical"]
-      repeat_interval: 4h
+      repeat_interval: {{ monitoring_service_alert_repeat_merged.critical }}
     - matchers: [severity="info"]
       receiver: webhook-info
       group_wait: 10s
-      repeat_interval: 1h
+      repeat_interval: {{ monitoring_service_alert_repeat_merged.info }}
 
 inhibit_rules:
   - source_matchers: [alertname="LogShippingStopped"]
     target_matchers: [source!="prometheus"]
 
-# A receiver without a webhook drops the notification.
 receivers:
 {% for name, resolved in [('webhook', true), ('webhook-info', false)] %}
   - name: {{ name }}
