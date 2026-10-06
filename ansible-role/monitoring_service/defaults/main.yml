@@ -20,5 +20,6 @@ monitoring_service_memory: {}
 monitoring_service_cpu: {}
 
 monitoring_service_metrics_retention: 90d
+monitoring_service_metrics_retention_size: 2GB
 monitoring_service_logs_retention: 30d
 monitoring_service_alert_repeat: {}
