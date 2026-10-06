@@ -98,7 +98,6 @@
     quadlet_service_extra_files: "{{ monitoring_service_files }}"
     quadlet_service_restart: "{{ monitoring_service_watch_module is changed }}"
 
-# As core: a retry through run0 opens a logind session each time.
 - name: Wait for Grafana and Prometheus to answer
   become: false
   ansible.builtin.uri:

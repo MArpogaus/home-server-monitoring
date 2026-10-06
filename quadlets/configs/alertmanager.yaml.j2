@@ -14,7 +14,6 @@ inhibit_rules:
   - source_matchers: [alertname="LogShippingStopped"]
     target_matchers: [source!="prometheus"]
 
-# A receiver without a webhook drops the notification.
 receivers:
 {% for name, resolved in [('webhook', true), ('webhook-info', false)] %}
   - name: {{ name }}

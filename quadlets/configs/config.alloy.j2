@@ -5,7 +5,6 @@ loki.source.journal "host" {
   forward_to     = [loki.process.sanitize.receiver]
 }
 
-// README.md, "Monitoring files of a repository".
 loki.process "sanitize" {
   forward_to = [loki.write.local.receiver]
 {% for f in monitoring_service_alloy | default([]) if f.kind == 'drop' %}
@@ -41,7 +40,6 @@ loki.relabel "journal" {
     source_labels = ["__journal__systemd_user_unit"]
     target_label  = "user_unit"
   }
-  // A manager's message names its subject in UNIT / USER_UNIT.
   rule {
     source_labels = ["__journal_unit"]
     regex         = "(.+)"
@@ -52,7 +50,6 @@ loki.relabel "journal" {
     regex         = "(.+)"
     target_label  = "user_unit"
   }
-  // README.md, "Loki limits".
   rule {
     source_labels = ["unit"]
     regex         = "(run-.+|libpod-.+|session-.+|[0-9a-f]{64}-.+)\\.(service|scope|timer)"
@@ -69,7 +66,6 @@ loki.relabel "journal" {
     source_labels = ["__journal__transport"]
     target_label  = "transport"
   }
-  // README.md, "Labels": journald sets _UID, the sender cannot.
   rule {
     source_labels = ["__journal__uid"]
     target_label  = "emitter_uid"
@@ -82,8 +78,6 @@ loki.relabel "journal" {
     replacement   = "{{ svc.name }}"
   }
 {% endfor %}{% endfor %}
-  // README.md, "Loki limits": only the idents a rule or a dashboard
-  // selects become label values.
   rule {
     source_labels = ["__journal_syslog_identifier"]
     regex         = {{ ('(' ~ (monitoring_service_idents | default([]) | map('regex_escape') | join('|')) ~ ')') | to_json }}
