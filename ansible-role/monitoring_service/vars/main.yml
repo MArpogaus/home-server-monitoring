@@ -10,6 +10,7 @@ monitoring_service_memory_defaults:
   alloy: 256M
   node-exporter: 64M
   blackbox: 64M
+monitoring_service_cpu_defaults: {}
 
 monitoring_service_alert_repeat_defaults:
   default: 24h
@@ -23,4 +24,5 @@ quadlet_service_secrets:
   monitoring_service_grafana_admin_password: "{{ monitoring_service_grafana_admin_password }}"
   monitoring_service_alert_webhook_token: "{{ monitoring_service_alert_webhook_token }}"
 quadlet_service_memory: "{{ monitoring_service_memory_defaults | combine(monitoring_service_memory) }}"
+quadlet_service_cpu: "{{ monitoring_service_cpu_defaults | combine(monitoring_service_cpu) }}"
 monitoring_service_repos: "{{ [{'name': 'home-server', 'dir': playbook_dir}] + base_setup_services }}"
