@@ -19,7 +19,7 @@ repos:
       - id: ansible-lint
 
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: 054e4a278e11abb9b8df6c103fa64f544d468ee5  # frozen: v4.19.0
+    rev: b2eb0cb7a4efa0e5d85f70d76379cda1194fa72b  # frozen: v4.19.1
     hooks:
       - id: commitizen
         stages: [commit-msg]
