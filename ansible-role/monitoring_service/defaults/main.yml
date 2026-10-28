@@ -1,7 +1,7 @@
 ---
 monitoring_service_grafana_image: "docker.io/grafana/grafana:13.2.4"
 monitoring_service_loki_image: "docker.io/grafana/loki:3.7.8"
-monitoring_service_alloy_image: "docker.io/grafana/alloy:v1.20.1"
+monitoring_service_alloy_image: "docker.io/grafana/alloy:v1.21.3"
 monitoring_service_prometheus_image: "docker.io/prom/prometheus:v3.14.0"
 monitoring_service_alertmanager_image: "docker.io/prom/alertmanager:v0.34.1"
 monitoring_service_node_exporter_image: "docker.io/prom/node-exporter:v1.12.1"
