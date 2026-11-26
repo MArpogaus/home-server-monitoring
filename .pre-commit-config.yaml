@@ -14,12 +14,12 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/ansible/ansible-lint
-    rev: 9bce2bfb8f4a984e6b13767bc0d6bf0a49492164  # frozen: v26.10.1
+    rev: b74fb6f73d234bf92672372cb1c10768e4018d16  # frozen: v26.11.0
     hooks:
       - id: ansible-lint
 
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: f690817de25831a37094ca35af5ada05c909ff1c  # frozen: v4.19.3
+    rev: ace110dad65751d559e9ffd239752f6f5e8f6f1e  # frozen: v4.20.0
     hooks:
       - id: commitizen
         stages: [commit-msg]
